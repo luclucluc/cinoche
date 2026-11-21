@@ -102,7 +102,7 @@ async function init() {
     if (!res.ok) throw new Error(res.status);
     P = await res.json();
   } catch {
-    $('#summary').innerHTML = 'Aucune donnée. Lancez d’abord <code>npm run scrape</code>.';
+    $('#slate').innerHTML = '<span><b>Erreur</b>Aucune donnée — lancez npm run scrape</span>';
     return;
   }
   for (const [id, m] of Object.entries(P.movies)) {
@@ -510,9 +510,17 @@ function render() {
 
   const nFilms = new Set(shows.map((s) => s[0])).size;
   const nCines = new Set(shows.map((s) => s[1])).size;
-  $('#summary').textContent = shows.length
-    ? `${nFilms} film${nFilms > 1 ? 's' : ''} · ${shows.length} séance${shows.length > 1 ? 's' : ''} · ${nCines} cinéma${nCines > 1 ? 's' : ''}`
-    : '';
+  // « Clap » : date, compteurs, mise à jour — façon fiche technique
+  const fmtD = (d) => new Date(d + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '.');
+  const when = state.date === 'week' ? `${fmtD(P.dates[0])} → ${fmtD(P.dates.at(-1))}` : fmtD(state.date);
+  const upd = new Date(P.generatedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  $('#slate').innerHTML = [
+    ['Date', when],
+    ['Films', nFilms],
+    ['Séances', shows.length],
+    ['Salles', nCines],
+    ['Màj', upd],
+  ].map(([k, v]) => `<span><b>${esc(k)}</b>${esc(v)}</span>`).join('');
   $('#empty').hidden = shows.length > 0;
 
   // En-tête des colonnes (vue Films)
