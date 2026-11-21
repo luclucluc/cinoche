@@ -17,79 +17,69 @@
           <input id="q" type="search" placeholder="Film, réalisateur, acteur, cinéma…" autocomplete="off" />
           <kbd>/</kbd>
         </label>
-        <button id="printBtn" class="icon-btn text-btn" title="Exporter le programme filtré en PDF">PDF</button>
-        <button id="prefsBtn" class="icon-btn" title="Préférences" aria-label="Préférences" aria-haspopup="dialog">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0" /><path d="M14 4v4M8 10v4M16 16v4" /></svg>
-        </button>
-      </div>
-
-      <nav class="tabs" id="tabs" aria-label="Sélection">
-        <button data-tab="all" class="on">Tous les films</button>
-        <button data-tab="new">Nouveautés</button>
-        <button data-tab="classic">Classiques</button>
-        <button data-tab="retro">Rétrospectives</button>
-        <span class="spacer"></span>
-        <div class="seg" id="view" role="group" aria-label="Vue">
-          <button data-view="films" class="on">Films</button>
-          <button data-view="cinemas">Cinémas</button>
-          <button data-view="map">Carte</button>
+        <nav class="tabs" id="tabs" aria-label="Sélection">
+          <button data-tab="all" class="on">Tous les films</button>
+          <button data-tab="new">Nouveautés</button>
+          <button data-tab="classic">Classiques</button>
+          <button data-tab="retro">Rétrospectives</button>
+        </nav>
+        <div class="top-actions">
+          <button id="printBtn" class="text-btn" title="Exporter le programme filtré en PDF">PDF</button>
+          <button id="prefsBtn" class="text-btn" title="Compte : apparence, notes, masquages, export" aria-haspopup="dialog">Compte</button>
         </div>
-      </nav>
-
+      </div>
       <div class="days" id="days" role="tablist" aria-label="Jour"></div>
-
-      <div class="geo" id="geo" hidden>
-        <button id="locate" class="pill" title="Utiliser ma position">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3" /><circle cx="12" cy="12" r="7" /></svg>
-          Ma position
-        </button>
-        <div class="addr">
-          <input id="addr" type="search" placeholder="ou une adresse : 12 rue de Rivoli…" autocomplete="off" aria-label="Adresse" />
-          <ul id="addrList" class="suggest" hidden></ul>
-        </div>
-        <select id="radius" aria-label="Rayon">
-          <option value="500">500 m</option>
-          <option value="1000">1 km</option>
-          <option value="2000">2 km</option>
-          <option value="3000">3 km</option>
-          <option value="5000">5 km</option>
-          <option value="10000">10 km</option>
-        </select>
-      </div>
-      <p class="geo-status" id="geoStatus" hidden></p>
-
-      <div class="filters" id="filters">
-        <div class="seg" id="version" role="group" aria-label="Version">
-          <button data-v="" class="on">VO & VF</button>
-          <button data-v="VO">VO</button>
-          <button data-v="VF">VF</button>
-        </div>
-        <button class="chip" data-f="hours"></button>
-        <button class="chip" data-f="zone"></button>
-        <button class="chip" data-f="cinemas"></button>
-        <button class="chip" data-f="cards"></button>
-        <button class="chip" data-f="langs"></button>
-        <button class="chip" data-f="genres"></button>
-        <button class="chip" data-f="formats"></button>
-        <button class="chip" data-f="sort"></button>
-        <button class="link reset" id="reset" hidden>Réinitialiser</button>
-      </div>
-      <div class="pop" id="pop" hidden></div>
     </header>
 
-    <main id="main">
-      <section class="map-box" id="mapBox" hidden><div id="map"></div></section>
-      <section class="list-col">
-        <div class="list-head" id="listHead"></div>
-        <ol class="list" id="list"></ol>
-        <p class="empty" id="empty" hidden>Aucune séance ne correspond à ces filtres.</p>
-      </section>
-    </main>
+    <div class="layout">
+      <aside class="sidebar" id="sidebar" aria-label="Filtres">
+        <div class="side-head">
+          <b>Filtres</b>
+          <button class="link reset" id="reset" hidden>Réinitialiser</button>
+          <button class="link side-close" id="sideClose" aria-label="Fermer les filtres">✕</button>
+        </div>
+        <div class="filters" id="filters">
+          <div class="seg" id="version" role="group" aria-label="Version">
+            <button data-v="" class="on">VO & VF</button>
+            <button data-v="VO">VO</button>
+            <button data-v="VF">VF</button>
+          </div>
+          <button class="chip" data-f="hours"></button>
+          <button class="chip" data-f="zone"></button>
+          <button class="chip" data-f="cinemas"></button>
+          <button class="chip" data-f="cards"></button>
+          <button class="chip" data-f="langs"></button>
+          <button class="chip" data-f="genres"></button>
+          <button class="chip" data-f="formats"></button>
+        </div>
+      </aside>
+
+      <main id="main">
+        <div class="results-bar">
+          <button class="text-btn filters-toggle" id="filtersToggle">Filtres</button>
+          <div class="seg" id="view" role="group" aria-label="Affichage des résultats">
+            <button data-view="films" class="on">Liste</button>
+            <button data-view="map">Carte</button>
+          </div>
+          <button class="chip" data-f="sort"></button>
+          <span class="results-count" id="resultsCount"></span>
+        </div>
+        <p class="geo-status" id="geoStatus" hidden></p>
+        <div class="results" id="results">
+          <section class="map-box" id="mapBox" hidden><div id="map"></div></section>
+          <section class="list-col">
+            <div class="list-head" id="listHead"></div>
+            <ol class="list" id="list"></ol>
+            <p class="empty" id="empty" hidden>Aucune séance ne correspond à ces filtres.</p>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <div class="pop" id="pop" hidden></div>
 
     <footer class="foot">
-      <span id="updated"></span>
-      <span>Vos préférences restent dans ce navigateur — <button class="link" data-open-prefs>exporter / importer</button></span>
-      <span>Données : Allociné · Adresses : BAN · Carte : OpenFreeMap / OpenStreetMap</span>
+      <span id="updated"></span> · Données : Allociné · Adresses : BAN · Carte : OpenFreeMap / OpenStreetMap
     </footer>
 
     <!-- Export PDF (visible uniquement à l’impression) -->
@@ -99,7 +89,7 @@
     <div class="prefs-overlay" id="prefsOverlay" hidden></div>
     <aside class="prefs" id="prefs" role="dialog" aria-modal="true" aria-labelledby="prefsTitle" hidden>
       <div class="prefs-head">
-        <b id="prefsTitle">Préférences</b>
+        <b id="prefsTitle">Compte</b>
         <button class="icon-btn" id="prefsClose" aria-label="Fermer">✕</button>
       </div>
 
@@ -110,6 +100,11 @@
           <button data-theme="dark">Sombre</button>
           <button data-theme="">Système</button>
         </div>
+      </section>
+
+      <section>
+        <h3>Notes affichées</h3>
+        <div class="checks" id="ratingList"></div>
       </section>
 
       <section>
@@ -129,7 +124,7 @@
 
       <section>
         <h3>Transférer mes préférences</h3>
-        <p class="hint">Tout est enregistré dans ce navigateur (thème, favoris, films et enseignes masqués, cartes, position…). Exportez-le pour le retrouver sur un autre navigateur ou un autre ordinateur.</p>
+        <p class="hint">Exportez vos préférences pour les retrouver sur un autre navigateur ou un autre ordinateur.</p>
         <div class="btns">
           <button class="btn" id="exportFile">Télécharger le fichier</button>
           <button class="btn" id="copyCode">Copier le code</button>
@@ -141,7 +136,8 @@
       </section>
 
       <section>
-        <button class="link" id="forget">Tout effacer de ce navigateur</button>
+        <p class="hint">Vos préférences (favoris, position, thème, notes, masquages…) restent dans ce navigateur : rien n’est envoyé à un serveur.</p>
+        <div class="btns"><button class="btn" id="forget">Tout effacer</button></div>
       </section>
     </aside>
 

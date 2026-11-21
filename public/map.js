@@ -127,11 +127,15 @@ export class CineMap {
       this.markers.set(p.id, m);
     }
 
-    // Recadrage uniquement si la position ou le rayon ont changé
-    const key = geo ? `${geo.lat},${geo.lon},${radius}` : 'none';
+    // Recadrage seulement quand le point, le rayon ou l'ensemble des cinémas affichés changent :
+    // autour du point s'il y en a un, sinon sur les cinémas des résultats filtrés.
+    const inside = points.filter((p) => p.inside);
+    const key = geo ? `${geo.lat},${geo.lon},${radius}` : 'pts:' + inside.map((p) => p.id).join(',');
     if (key !== this.lastView) {
       this.lastView = key;
       if (geo) this.map.fitBounds(L.latLng(geo.lat, geo.lon).toBounds(radius * 2.6), { animate: false });
+      else if (inside.length > 1) this.map.fitBounds(L.latLngBounds(inside.map((p) => [p.lat, p.lon])), { padding: [30, 30], maxZoom: 15, animate: false });
+      else if (inside.length === 1) this.map.setView([inside[0].lat, inside[0].lon], 15, { animate: false });
       else this.map.setView([PARIS.lat, PARIS.lon], 12, { animate: false });
     }
   }

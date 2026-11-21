@@ -55,13 +55,15 @@ const HOURS = [
   ['20', 'Après 20 h'],
   ['22', 'Après 22 h'],
 ];
-const SORTS = [
+const sortOptions = () => [
   ['copies', 'Plus de cinémas'],
-  ...RATINGS.map((r) => [r.key, `Note ${r.label}`]),
+  ...visibleRatings().map((r) => [r.key, `Note ${r.label}`]),
   ['release', 'Sortie récente'],
   ['year', 'Année (récent → ancien)'],
   ['title', 'Titre A → Z'],
 ];
+// Notes affichées (réglable dans Compte) ; toutes par défaut
+const visibleRatings = () => RATINGS.filter((r) => state.showRatings.has(r.key));
 
 const state = {
   tab: 'all',
@@ -80,6 +82,7 @@ const state = {
   favs: new Set(store.get('favs', [])),
   hiddenPeople: new Set(store.get('hiddenPeople', [])), // acteurs / réalisateurs masqués
   hiddenChains: new Set(store.get('hiddenChains', [])), // enseignes masquées
+  showRatings: new Set(store.get('ratings', RATINGS.map((r) => r.key))), // notes affichées
   open: new Set(),
   geo: store.get('geo', null), // { lat, lon, label } — reste dans ce navigateur
   radius: store.get('radius', 2000),
@@ -217,7 +220,7 @@ const FILTERS = {
   langs: { label: 'Langues', options: () => OPTIONS.langs.map((l) => [l, langLabel(l)]), none: 'Toutes', note: 'Langue originale du film.' },
   genres: { label: 'Genres', options: () => OPTIONS.genres.map((g) => [g, g]) },
   formats: { label: 'Format', options: () => OPTIONS.formats.map((f) => [f, FORMAT_LABEL[f] || f]) },
-  sort: { label: 'Tri', single: true, options: () => SORTS, value: () => state.sort, set: (v) => (state.sort = v), def: 'copies', neutral: true },
+  sort: { label: 'Tri', single: true, options: sortOptions, value: () => state.sort, set: (v) => (state.sort = v), def: 'copies', neutral: true },
 };
 
 function chipText(key) {
@@ -267,10 +270,18 @@ function openPop(key, chip) {
     (f.note ? `<p class="pop-note">${esc(f.note)}</p>` : '') +
     `<ul class="pop-list">${rows}</ul>`;
   pop.hidden = false;
-  const r = chip.getBoundingClientRect();
-  const left = Math.min(r.left, window.innerWidth - pop.offsetWidth - 12);
-  pop.style.left = Math.max(12, left) + 'px';
-  pop.style.top = r.bottom + 6 + 'px';
+  const inline = !!chip.closest('.sidebar');
+  pop.classList.toggle('inline', inline);
+  if (inline) {
+    chip.after(pop);
+    pop.style.left = pop.style.top = '';
+  } else {
+    document.body.append(pop);
+    const r = chip.getBoundingClientRect();
+    const left = Math.min(r.left, window.innerWidth - pop.offsetWidth - 12);
+    pop.style.left = Math.max(12, left) + 'px';
+    pop.style.top = r.bottom + 6 + 'px';
+  }
   for (const c of document.querySelectorAll('.chip')) c.classList.toggle('open', c === chip);
   pop.querySelector('.pop-search')?.focus();
 }
@@ -296,7 +307,7 @@ function reopenPop(key) {
   openPop(key, chip);
 }
 function useNear(geo) {
-  if (geo) { state.geo = geo; state.selected = null; store.set('geo', geo); $('#addr').value = geo.label; }
+  if (geo) { state.geo = geo; state.selected = null; store.set('geo', geo); }
   FILTERS.zone.set('@near');
   nearMsg = '';
   reopenPop('zone');
@@ -404,7 +415,10 @@ function bindControls() {
     for (const g of pop.querySelectorAll('.pop-group')) g.hidden = !!q;
   });
   document.addEventListener('click', () => popKey && closePop());
-  window.addEventListener('resize', () => popKey && closePop());
+  window.addEventListener('resize', () => popKey && !$('#pop').classList.contains('inline') && closePop());
+  // Colonne de filtres sur mobile
+  $('#filtersToggle').onclick = () => document.body.classList.toggle('filters-open');
+  $('#sideClose').onclick = () => document.body.classList.remove('filters-open');
 
   let t;
   $('#q').addEventListener('input', (e) => {
@@ -438,7 +452,6 @@ function bindControls() {
     if (state.view === 'map' && key.startsWith('t') && li.classList.contains('open')) cineMap?.focus(key.slice(1));
   });
 
-  bindGeo();
 
   bindPrefs();
   $('#printBtn').onclick = printProgramme;
@@ -456,6 +469,7 @@ function readHash() {
   const h = new URLSearchParams(location.hash.slice(1));
   if (h.get('d') && (P.dates.includes(h.get('d')) || h.get('d') === 'week')) state.date = h.get('d');
   for (const k of ['tab', 'view', 'q', 'sort', 'hours']) if (h.has(k)) state[k] = h.get(k);
+  if (!['films', 'map'].includes(state.view)) state.view = 'films';
   for (const [p, k] of Object.entries(LIST_PARAMS)) if (h.has(p)) state[k] = new Set(h.get(p).split(',').filter(Boolean));
   if (h.has('q')) $('#q').value = state.q;
 }
@@ -476,7 +490,7 @@ function writeHash() {
 
 function inZone(t) {
   const z = state.zone;
-  if (state.view === 'map' || z === '@near') {
+  if (z === '@near') {
     if (!hasCoords(t)) return false;
     return !state.geo || dist(t) <= state.radius;
   }
@@ -521,7 +535,7 @@ function filteredShows() {
     if (state.formats.size && !formatsOf(s).some((f) => state.formats.has(f))) return false;
     const t = P.theaters[s[1]];
     if (!t || isHiddenTheater(t) || !inZone(t)) return false;
-    if (state.cinemas.size && state.view !== 'map' && !state.cinemas.has(t.id)) return false;
+    if (state.cinemas.size && !state.cinemas.has(t.id)) return false;
     if (cards.length && !cards.some((c) => acceptsCard(c, t, P.cards))) return false;
     const m = P.movies[s[0]];
     if (!tabOk(m)) return false;
@@ -551,16 +565,14 @@ function render() {
     c.textContent = chipText(c.dataset.f);
     c.classList.toggle('active', isActive(c.dataset.f));
   }
+  if (state.sort !== 'copies' && RATINGS.some((r) => r.key === state.sort) && !state.showRatings.has(state.sort)) state.sort = 'copies';
   const isMap = state.view === 'map';
-  document.querySelector('.chip[data-f="zone"]').hidden = isMap;
-  document.querySelector('.chip[data-f="cinemas"]').hidden = isMap;
   $('#reset').hidden = !Object.keys(FILTERS).some(isActive) && !state.version;
-  $('#geo').hidden = !isMap;
   $('#mapBox').hidden = !isMap;
-  $('#main').classList.toggle('map-mode', isMap);
-  $('#radius').value = String(state.radius);
-  if (isMap && !state.geo) setStatus('Choisissez un point : votre position, une adresse, ou un clic sur la carte.');
-  else if (isMap) setStatus('');
+  document.querySelector('.chip[data-f="sort"]').hidden = isMap; // le tri concerne la liste des films
+  $('#results').classList.toggle('map-mode', isMap);
+  document.documentElement.style.setProperty('--ncells', visibleRatings().length);
+  setStatus(isMap && state.zone !== '@near' ? 'Astuce : cliquez sur la carte (ou utilisez « Lieu → Autour de… ») pour chercher autour d’un point.' : '');
   $('#days .on')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   writeHash();
 
@@ -570,11 +582,13 @@ function render() {
   const items = films ? groupByMovie(shows) : groupByTheater(shows);
 
   $('#empty').hidden = shows.length > 0;
+  const nF = new Set(shows.map((s) => s[0])).size, nC = new Set(shows.map((s) => s[1])).size;
+  $('#resultsCount').textContent = shows.length ? `${nF} film${nF > 1 ? 's' : ''} · ${shows.length} séance${shows.length > 1 ? 's' : ''} · ${nC} cinéma${nC > 1 ? 's' : ''}` : '';
 
   // En-tête des colonnes (vue Films)
   $('#listHead').hidden = !films || !shows.length;
   $('#listHead').innerHTML = films
-    ? `<span></span><span>Film</span><span>Réalisation</span><span class="cells">${RATINGS.map((r) => `<button class="cell${state.sort === r.key ? ' on' : ''}" data-sort="${r.key}" title="Trier par ${esc(r.title)}">${esc(r.short || r.label)}</button>`).join('')}</span>`
+    ? `<span></span><span>Film</span><span>Réalisation</span><span class="cells">${visibleRatings().map((r) => `<button class="cell${state.sort === r.key ? ' on' : ''}" data-sort="${r.key}" title="Trier par ${esc(r.title)}">${esc(r.short || r.label)}</button>`).join('')}</span>`
     : '';
   $('#listHead').onclick = (e) => {
     const b = e.target.closest('[data-sort]');
@@ -640,7 +654,7 @@ function groupByTheater(shows) {
   const map = new Map();
   for (const s of shows) (map.get(s[1]) || map.set(s[1], []).get(s[1])).push(s);
   const list = [...map.entries()].map(([id, ss]) => ({ t: P.theaters[id], shows: ss }));
-  if (state.view === 'map' && state.geo) {
+  if (state.view === 'map' && state.zone === '@near' && state.geo) {
     list.sort((a, b) => dist(a.t) - dist(b.t));
     return list.map((x) => ({ key: 't' + x.t.id, t: x.t, shows: x.shows, html: theaterRow('t' + x.t.id, x.t, x.shows) }));
   }
@@ -662,7 +676,7 @@ const byPlace = (a, b) =>
   areaRank(a.area) - areaRank(b.area) || String(a.dept).localeCompare(String(b.dept)) || a.area.localeCompare(b.area, 'fr') || a.name.localeCompare(b.name, 'fr');
 
 function ratingCells(m) {
-  return `<span class="cells">${RATINGS.map((r) => {
+  return `<span class="cells">${visibleRatings().map((r) => {
     const v = m[r.key];
     if (v == null) return `<span class="cell na" title="${esc(r.title)}">–</span>`;
     return `<span class="cell${v >= r.hi ? ' hi' : ''}" title="${esc(r.title)}"><i>${esc(r.short || r.label)}</i>${esc(r.fmt(v))}</span>`;
@@ -740,7 +754,7 @@ function fillDetail(li) {
     ].filter(Boolean).map(esc);
     const links = [
       `<a href="${FILM_URL(m.allocineId)}" target="_blank" rel="noopener">Allociné</a>`,
-      ...RATINGS.filter((r) => !['press', 'spect'].includes(r.key) && r.url(m)).map((r) => `<a href="${esc(r.url(m))}" target="_blank" rel="noopener">${esc(r.label)}</a>`),
+      ...visibleRatings().filter((r) => !['press', 'spect'].includes(r.key) && r.url(m)).map((r) => `<a href="${esc(r.url(m))}" target="_blank" rel="noopener">${esc(r.label)}</a>`),
     ];
     const nT = byT.size, nS = it.shows.length;
     box.innerHTML =
@@ -879,66 +893,8 @@ function setGeo(geo) {
   state.geo = geo;
   state.selected = null;
   store.set('geo', geo);
-  $('#addr').value = geo ? geo.label : '';
+  if (geo) FILTERS.zone.set('@near');
   render();
-}
-
-function bindGeo() {
-  if (state.geo) $('#addr').value = state.geo.label;
-
-  $('#locate').onclick = () => {
-    if (!navigator.geolocation) return setStatus('La géolocalisation n’est pas disponible dans ce navigateur.', true);
-    setStatus('Localisation en cours…');
-    navigator.geolocation.getCurrentPosition(
-      (pos) => { setStatus(''); setGeo({ lat: pos.coords.latitude, lon: pos.coords.longitude, label: 'Ma position' }); },
-      (err) => setStatus(err.code === 1 ? 'Accès à la position refusé. Saisissez plutôt une adresse.' : 'Position introuvable. Saisissez plutôt une adresse.', true),
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
-    );
-  };
-
-  $('#radius').onchange = (e) => {
-    state.radius = Number(e.target.value);
-    store.set('radius', state.radius);
-    render();
-  };
-
-  // Autocomplétion d'adresse (Base Adresse Nationale)
-  const input = $('#addr');
-  const list = $('#addrList');
-  let timer, results = [], active = -1;
-  const close = () => { list.hidden = true; active = -1; };
-  const show = () => {
-    list.innerHTML = results.map((r, i) => `<li data-i="${i}" class="${i === active ? 'on' : ''}">${esc(r.label)}</li>`).join('');
-    list.hidden = !results.length;
-  };
-  const choose = (r) => { close(); input.blur(); setGeo(r); };
-
-  input.addEventListener('input', () => {
-    clearTimeout(timer);
-    const q = input.value.trim();
-    if (q.length < 3) { results = []; return close(); }
-    timer = setTimeout(async () => {
-      try { results = await searchAddress(q, state.geo || undefined); } catch { results = []; }
-      active = -1;
-      show();
-    }, 250);
-  });
-  input.addEventListener('keydown', (e) => {
-    if (list.hidden) return;
-    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-      e.preventDefault();
-      active = (active + (e.key === 'ArrowDown' ? 1 : -1) + results.length) % results.length;
-      show();
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      choose(results[Math.max(active, 0)]);
-    } else if (e.key === 'Escape') close();
-  });
-  list.addEventListener('mousedown', (e) => {
-    const li = e.target.closest('li');
-    if (li) { e.preventDefault(); choose(results[li.dataset.i]); }
-  });
-  input.addEventListener('blur', () => setTimeout(close, 100));
 }
 
 async function updateMap(shows) {
@@ -948,11 +904,12 @@ async function updateMap(shows) {
   });
   const films = new Map();
   for (const s of shows) (films.get(s[1]) || films.set(s[1], new Set()).get(s[1])).add(s[0]);
+  const near = state.zone === '@near' && state.geo;
   const points = Object.values(P.theaters)
     .filter((t) => hasCoords(t) && !isHiddenTheater(t))
-    .map((t) => ({ id: t.id, name: t.name, lat: t.lat, lon: t.lon, count: films.get(t.id)?.size || 0, inside: !state.geo || dist(t) <= state.radius }));
+    .map((t) => ({ id: t.id, name: t.name, lat: t.lat, lon: t.lon, count: films.get(t.id)?.size || 0, inside: films.has(t.id) || (near && dist(t) <= state.radius) }));
   try {
-    await cineMap.update({ points, geo: state.geo, radius: state.radius, selected: state.selected });
+    await cineMap.update({ points, geo: near ? state.geo : null, radius: state.radius, selected: state.selected });
   } catch {
     setStatus('Impossible de charger la carte (connexion ?).', true);
   }
@@ -1006,6 +963,9 @@ function renderPrefs() {
   const films = Object.values(P.movies).filter(isHiddenMovie).length;
   $('#peopleHint').textContent = names.length ? `${films} film${films > 1 ? 's' : ''} du programme masqué${films > 1 ? 's' : ''}.` : 'Aucun nom masqué.';
 
+  $('#ratingList').innerHTML = RATINGS.map(
+    (r) => `<label class="pop-opt"><input type="checkbox" value="${r.key}" ${state.showRatings.has(r.key) ? 'checked' : ''} /><span>${esc(r.title.replace(/^Note /, ''))}</span></label>`
+  ).join('');
   const count = (id) => Object.values(P.theaters).filter((t) => t.chain === id).length;
   $('#chainList').innerHTML = CHAINS.map(
     (c) => `<label class="pop-opt"><input type="checkbox" value="${c.id}" ${state.hiddenChains.has(c.id) ? 'checked' : ''} /><span>${esc(c.label)}</span><small>${count(c.id)} salles</small></label>`
@@ -1091,6 +1051,14 @@ function bindPrefs() {
   $('#hiddenPeople').onclick = (e) => {
     const b = e.target.closest('[data-unhide]');
     if (b) { state.hiddenPeople.delete(b.dataset.unhide); savePrefsAndRender(); }
+  };
+
+  // Notes affichées
+  $('#ratingList').onchange = (e) => {
+    e.target.checked ? state.showRatings.add(e.target.value) : state.showRatings.delete(e.target.value);
+    store.set('ratings', RATINGS.map((r) => r.key).filter((k) => state.showRatings.has(k)));
+    renderPrefs();
+    render();
   };
 
   // Enseignes masquées
