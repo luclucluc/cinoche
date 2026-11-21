@@ -22,19 +22,39 @@ jobs:
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # Un push qui ne touche pas au scraper réutilise les données en ligne (publication en ~1 min).
+      # Le scraping complet a lieu chaque nuit, à la demande, et quand le scraper change.
+      - name: Faut-il relancer le scraping ?
+        id: mode
+        run: |
+          if [ "${{ github.event_name }}" != "push" ]; then echo "scrape=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          BEFORE="${{ github.event.before }}"
+          if git cat-file -e "$BEFORE" 2>/dev/null && ! git diff --name-only "$BEFORE" "${{ github.sha }}" | grep -qE '^(scraper/|package\.json)'; then
+            mkdir -p public/data
+            if curl -sf "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/data/programme.json" -o public/data/programme.json; then
+              echo "Données en ligne réutilisées"; echo "scrape=false" >> "$GITHUB_OUTPUT"; exit 0
+            fi
+          fi
+          echo "scrape=true" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-node@v7
+        if: steps.mode.outputs.scrape == 'true'
         with:
           node-version: 24
 
       # Cache des correspondances et des notes (SensCritique, IMDb, Letterboxd…) d'une nuit à l'autre
       - uses: actions/cache@v6
+        if: steps.mode.outputs.scrape == 'true'
         with:
           path: .cache
           key: notes-${{ github.run_id }}
           restore-keys: notes-
 
       - name: Récupération des séances, géocodage et notes
+        if: steps.mode.outputs.scrape == 'true'
         run: npm run scrape
         env:
           TZ: Europe/Paris
