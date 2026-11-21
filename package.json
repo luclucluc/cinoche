@@ -7,7 +7,7 @@
   "scripts": {
     "scrape": "node scraper/scrape.js",
     "scrape:quick": "node scraper/scrape.js --days 2 --paris-only --no-ratings",
-    "notes": "node scraper/senscritique.js && node scraper/ratings.js",
+    "notes": "node scraper/senscritique.js && node scraper/ratings.js && node scraper/cast.js",
     "start": "node server.js"
   },
   "engines": { "node": ">=20" }

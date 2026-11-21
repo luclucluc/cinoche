@@ -12,6 +12,7 @@ import { geocodeTheaters } from './geocode.js';
 import { addSensCritique } from './senscritique.js';
 import { addRatings } from './ratings.js';
 import { cinechequeTheaters } from './cinecheque.js';
+import { addFullCast } from './cast.js';
 
 const BASE = 'https://www.allocine.fr';
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36';
@@ -297,7 +298,11 @@ async function main() {
   // Notes des autres sites : en parallèle, et jamais bloquantes pour la mise à jour du programme
   const safe = (name, p) => p.catch((err) => console.warn(`  ✗ ${name} : ${err.message}`));
   if (!process.argv.includes('--no-ratings')) {
-    await Promise.all([safe('SensCritique', addSensCritique(movies)), safe('Notes IMDb/Letterboxd/RT/Metacritic', addRatings(movies))]);
+    await Promise.all([
+      safe('SensCritique', addSensCritique(movies)),
+      safe('Notes IMDb/Letterboxd/RT/Metacritic', addRatings(movies)),
+      safe('Distributions', addFullCast(movies)),
+    ]);
   }
 
   // Garde-fou : si Allociné nous a bloqués, on n'écrase pas les données existantes

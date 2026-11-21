@@ -54,6 +54,7 @@ Le scraper ([scraper/scrape.js](scraper/scrape.js)) interroge Allociné :
 | Note IMDb | Jeux de données officiels IMDb (`title.ratings`, `title.basics`) ; identifiant via Wikidata ou titre + année + durée |
 | Note Letterboxd | Redirection `letterboxd.com/imdb/<id>/` puis métadonnées de la page |
 | Rotten Tomatoes / Metacritic | Wikidata, sinon adresse déduite du titre original et vérifiée (année, réalisateur) |
+| Distribution complète (au-delà des 3 acteurs principaux d'Allociné) | Wikidata (P161), en requêtes groupées, avec un cache dans `.cache/cast.json` ; sert à la recherche et au masquage |
 
 Les correspondances et les notes sont mises en cache dans `.cache/` (conservé d'une nuit à l'autre par GitHub Actions). Les notes sont rafraîchies tous les 2 jours pour les films récents, tous les 10 jours pour les autres.
 Seules des pages autorisées par les `robots.txt` des sites sont consultées, à raison d'une requête par seconde et par site.
