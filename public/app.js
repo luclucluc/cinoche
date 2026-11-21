@@ -836,6 +836,7 @@ function fillDetail(li) {
   const it = current.byKey.get(li.dataset.key);
   if (!it) return;
   const box = li.querySelector('.detail');
+  requestAnimationFrame(() => alignInfoCols(box)); // après affichage du détail
 
   if (it.m) {
     const m = it.m;
@@ -884,6 +885,20 @@ function fillDetail(li) {
         .join('');
   }
 }
+
+// La colonne d'infos du détail d'un film commence à la fin du 5e bouton de la bande des jours
+// (« mar. » dans la semaine en cours) : on mesure ce bouton et on cale la grille dessus.
+function alignInfoCols(root = document) {
+  const ref = document.querySelectorAll('#days button')[4];
+  const wide = matchMedia('(min-width: 861px)').matches && state.view !== 'map';
+  for (const head of root.querySelectorAll('.film-head')) {
+    if (!wide || !ref) { head.style.gridTemplateColumns = ''; continue; }
+    const gap = parseFloat(getComputedStyle(head).columnGap) || 0;
+    const w = ref.getBoundingClientRect().right - head.getBoundingClientRect().left - gap;
+    head.style.gridTemplateColumns = w > 200 ? `${Math.round(w)}px minmax(0, 1fr)` : '';
+  }
+}
+window.addEventListener('resize', () => alignInfoCols());
 
 // ------------------------------------------------------------------ Films vus
 
