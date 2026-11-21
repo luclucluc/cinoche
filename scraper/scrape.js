@@ -11,6 +11,7 @@ import { PARIS_CITY_ID, DEPARTMENTS, EXTRA_CITIES, DEFAULT_DAYS, CONCURRENCY, TH
 import { geocodeTheaters } from './geocode.js';
 import { addSensCritique } from './senscritique.js';
 import { addRatings } from './ratings.js';
+import { cinechequeTheaters } from './cinecheque.js';
 
 const BASE = 'https://www.allocine.fr';
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36';
@@ -45,7 +46,7 @@ async function get(path, { json = true, tries = 6 } = {}) {
     await throttle();
     try {
       const res = await fetch(BASE + path, { headers: { 'User-Agent': UA, 'Accept-Language': 'fr-FR,fr' }, signal: AbortSignal.timeout(20000) });
-      if (res.status === 404) return null;
+      if (res.status === 404) return false; // absent (≠ échec réseau, qui renvoie null)
       if (res.status === 429) {
         // Pause globale (plafonnée à 60 s) : tous les workers attendent.
         const retryAfter = Math.min(Number(res.headers.get('retry-after')) || 10 * attempt, 60);
@@ -93,7 +94,8 @@ async function communesOf(dep) {
 // Commune → ville Allociné : nom identique, ou à défaut même code postal et nom proche
 async function resolveCity({ name, zips }) {
   const data = await get(`/_/localization_city/${encodeURIComponent(name)}`);
-  const cities = (data?.values?.cities || []).map((c) => c.node).filter((c) => zips.includes(String(c.zip)));
+  if (!data?.values) return undefined; // échec réseau : ne pas mettre en cache
+  const cities = (data.values.cities || []).map((c) => c.node).filter((c) => zips.includes(String(c.zip)));
   const n = norm(name);
   const city = cities.find((c) => norm(c.name) === n) || cities.find((c) => norm(c.name).startsWith(n) || n.startsWith(norm(c.name)));
   return city ? { id: city.id, name: city.name } : null;
@@ -113,7 +115,11 @@ async function theatersOfCity(city) {
   const found = [];
   for (let page = 1; page < 30; page++) {
     const html = await get(`/salle/cinema/ville-${city.id}/${page > 1 ? `?page=${page}` : ''}`, { json: false });
-    if (!html) break;
+    if (html === false) break; // pas (ou plus) de page : liste terminée
+    if (!html) {
+      if (page === 1) return null; // échec réseau : on gardera la liste en cache
+      break;
+    }
     const cards = html.split('class="theater-card').slice(1);
     const before = found.length;
     for (const card of cards) {
@@ -208,19 +214,31 @@ async function main() {
   const t0 = Date.now();
   await mkdir(dirname(ZONES_CACHE), { recursive: true });
   const zones = JSON.parse(await readFile(ZONES_CACHE, 'utf8').catch(() => '{}'));
-  zones.cities ??= {}; // "nom|codes postaux" → { id, name } | null
+  if (zones.v !== 2) Object.assign(zones, { v: 2, theaters: {} }); // purge des listes enregistrées par erreur (v1)
+  zones.cities ??= {}; // "nom|codes postaux" → { id, name } | { none: date }
   zones.theaters ??= {}; // id ville Allociné → { at, list }
 
   const cities = [{ id: PARIS_CITY_ID, name: 'Paris' }];
   if (!PARIS_ONLY) {
     const communes = [...(await Promise.all(DEPARTMENTS.map(communesOf))).flat(), ...EXTRA_CITIES.map(([name, zip]) => ({ name, zips: [zip] }))];
     const key = (c) => `${c.name}|${c.zips.join(',')}`;
-    const unknown = communes.filter((c) => !(key(c) in zones.cities));
+    // Entrée en cache : { id, name } ou { none: date } (absente d'Allociné, revérifiée après 30 jours)
+    const unknown = communes.filter((c) => {
+      const e = zones.cities[key(c)];
+      return !e || (e.none && Date.now() - e.none > 30 * 864e5);
+    });
     if (unknown.length) console.log(`▸ Résolution de ${unknown.length} communes sur Allociné…`);
-    await pool(unknown, CONCURRENCY, async (c) => (zones.cities[key(c)] = await resolveCity(c)));
+    let failed = 0;
+    await pool(unknown, CONCURRENCY, async (c) => {
+      const r = await resolveCity(c);
+      if (r === undefined) failed++;
+      else zones.cities[key(c)] = r || { none: Date.now() };
+    });
+    if (failed) console.warn(`  ✗ ${failed} commune(s) non résolues (réseau), nouvel essai au prochain passage`);
     const seen = new Set();
     for (const c of communes) {
       const city = zones.cities[key(c)];
+      if (!city?.id) continue;
       if (city && !seen.has(city.id)) seen.add(city.id) && cities.push(city);
     }
     console.log(`▸ Zones : Paris + ${communes.length} communes (${DEPARTMENTS.join(', ')}${EXTRA_CITIES.length ? ' + extra' : ''}), ${cities.length - 1} connues d'Allociné`);
@@ -231,8 +249,9 @@ async function main() {
   await pool(cities, CONCURRENCY, async (city) => {
     const cached = zones.theaters[city.id];
     const fresh = cached && city.id !== PARIS_CITY_ID && Date.now() - cached.at < THEATERS_TTL_DAYS * 864e5;
-    const list = fresh ? cached.list : await theatersOfCity(city);
-    if (!fresh) zones.theaters[city.id] = { at: Date.now(), list };
+    let list = fresh ? cached.list : await theatersOfCity(city);
+    if (list === null) list = cached?.list || []; // échec : on garde l'ancienne liste
+    else if (!fresh) zones.theaters[city.id] = { at: Date.now(), list };
     for (const t of list) theaters[t.id] ??= t;
   });
   await writeFile(ZONES_CACHE, JSON.stringify(zones));
@@ -289,7 +308,15 @@ async function main() {
     process.exit(1);
   }
 
-  const programme = { generatedAt: new Date().toISOString(), dates, theaters, movies, showtimes: uniq };
+  // Cartes dont la liste de salles vient d'une source externe
+  const cards = {};
+  try {
+    cards.cinecheque = await cinechequeTheaters(theaters, ['75', ...DEPARTMENTS]);
+  } catch (err) {
+    console.warn(`  ✗ Cinéchèques : ${err.message}`);
+  }
+
+  const programme = { generatedAt: new Date().toISOString(), dates, theaters, movies, showtimes: uniq, cards };
   await mkdir(dirname(OUT), { recursive: true });
   await writeFile(OUT, JSON.stringify(programme));
   console.log(

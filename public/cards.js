@@ -1,13 +1,14 @@
 // Cartes illimitées / abonnements, et cinémas qui les acceptent.
 // Allociné ne fournit pas cette information : les règles se basent sur le nom de l'enseigne.
 // Pour ajouter une salle partenaire, ajoutez son identifiant Allociné (ex. 'C0159') à `extra`.
-// À compléter : Cinéchèques (nécessite la liste exacte des salles qui les acceptent).
+// Cinéchèques : liste mise à jour chaque nuit depuis cinecheque.fr (champ `cards.cinecheque` du programme).
 
 export const CARDS = [
   { id: 'ugc', label: 'UGC Illimité', match: /^(UGC|MK2)\b/i, extra: [] }, // UGC + MK2 (accord de réciprocité)
   { id: 'pathe', label: 'CinéPass Pathé (ex-Le Pass Gaumont)', match: /^(Path[ée]|Gaumont)\b/i, extra: [] },
   { id: 'ugc5', label: 'UGC « la carte » 5 places', match: /^UGC\b/i, extra: [] },
   { id: 'mk2', label: 'Carte MK2 5 places', match: /^MK2\b/i, extra: [] },
+  { id: 'cinecheque', label: 'Cinéchèques', match: null, extra: [], source: 'cinecheque' },
   {
     id: 'cip',
     label: 'Carte CIP (Cinémas Indépendants Parisiens)',
@@ -21,4 +22,5 @@ export const CARDS = [
   },
 ];
 
-export const acceptsCard = (card, theater) => !!card.match?.test(theater.name) || card.extra.includes(theater.id);
+export const acceptsCard = (card, theater, sources = {}) =>
+  !!card.match?.test(theater.name) || card.extra.includes(theater.id) || !!sources[card.source]?.includes(theater.id);

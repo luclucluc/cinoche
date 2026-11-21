@@ -208,7 +208,7 @@ const FILTERS = {
     options: () => CARDS.map((c) => [c.id, c.label]),
     set: () => store.set('cards', [...state.cards]),
     none: 'Aucune',
-    note: 'UGC Illimité : salles UGC et MK2 ; CinéPass : Pathé ; CIP : les 32 salles adhérentes.',
+    note: 'UGC Illimité : salles UGC et MK2 ; CinéPass : Pathé ; CIP : les 32 salles adhérentes ; Cinéchèques : liste officielle cinecheque.fr.',
   },
   langs: { label: 'Langues', options: () => OPTIONS.langs.map((l) => [l, langLabel(l)]), none: 'Toutes', note: 'Langue originale du film.' },
   genres: { label: 'Genres', options: () => OPTIONS.genres.map((g) => [g, g]) },
@@ -466,7 +466,7 @@ function filteredShows() {
     const t = P.theaters[s[1]];
     if (!t || !inZone(t)) return false;
     if (state.cinemas.size && state.view !== 'map' && !state.cinemas.has(t.id)) return false;
-    if (cards.length && !cards.some((c) => acceptsCard(c, t))) return false;
+    if (cards.length && !cards.some((c) => acceptsCard(c, t, P.cards))) return false;
     const m = P.movies[s[0]];
     if (!tabOk(m)) return false;
     if (state.langs.size && !state.langs.has(m.lang)) return false;

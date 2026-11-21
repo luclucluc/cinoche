@@ -61,7 +61,7 @@ Le scraper est volontairement lent (2 requêtes en parallèle, au moins 400 ms e
 Format de `programme.json` : `{ generatedAt, dates, theaters, movies, showtimes }`. Les cinémas portent leurs coordonnées `lat` et `lon`.
 Pour géocoder seul un `programme.json` existant : `node scraper/geocode.js`.
 
-Cartes ([public/cards.js](public/cards.js)) : UGC Illimité (UGC et MK2), CinéPass Pathé et cartes 5 places UGC et MK2 sont déduits de l'enseigne. La carte CIP repose sur la liste officielle des 32 salles adhérentes. On peut y ajouter des salles partenaires.
+Cartes ([public/cards.js](public/cards.js)) : UGC Illimité (UGC et MK2), CinéPass Pathé et cartes 5 places UGC et MK2 sont déduits de l'enseigne. La carte CIP repose sur la liste officielle des 32 salles adhérentes. La liste des salles acceptant les Cinéchèques est rechargée chaque nuit depuis la carte de [cinecheque.fr](https://www.cinecheque.fr/liste-des-cinemas/), qui donne directement l'identifiant Allociné de chaque salle. On peut y ajouter des salles partenaires.
 Chaque séance est un tableau compact : `[movieId, theaterId, "YYYY-MM-DDTHH:MM", "VO"|"VF", format]`.
 
 Ces données appartiennent à Allociné et aux cinémas. Ce projet est destiné à un usage personnel. Avant toute mise en ligne publique, vérifiez les conditions d'utilisation d'Allociné.
