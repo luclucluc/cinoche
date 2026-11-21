@@ -174,8 +174,15 @@ const dayLabel = (d, today = parisNow().date) => {
 function buildDays() {
   $('#days').innerHTML =
     `<button role="tab" data-date="week">Toute la semaine</button>` +
-    // Jours déjà passés masqués (données de la veille si la mise à jour de la nuit n'a pas encore eu lieu)
-    P.dates.filter((d) => d >= parisNow().date).map((d) => `<button role="tab" data-date="${d}">${dayLabel(d)}</button>`).join('');
+    // Toujours 7 jours à partir d'aujourd'hui ; un jour sans données (mise à jour de la nuit pas encore passée) est grisé
+    Array.from({ length: 7 }, (_, i) => {
+      const dt = new Date(parisNow().date + 'T12:00:00Z');
+      dt.setUTCDate(dt.getUTCDate() + i);
+      const d = dt.toISOString().slice(0, 10);
+      return P.dates.includes(d)
+        ? `<button role="tab" data-date="${d}">${dayLabel(d)}</button>`
+        : `<button role="tab" data-date="${d}" disabled title="Programme pas encore disponible">${dayLabel(d)}</button>`;
+    }).join('');
 }
 
 // Définition des filtres en « puces » avec liste déroulante
@@ -281,9 +288,9 @@ function openPop(key, chip) {
     })
     .join('');
   pop.innerHTML =
-    // Dans la colonne de filtres, le bouton porte déjà le nom du filtre : pas de titre répété
+    // Dans la colonne de filtres, le bouton porte déjà le nom du filtre, et sa croix efface la sélection : pas d'en-tête
     (chip.closest('.sidebar')
-      ? f.single ? '' : '<div class="pop-head pop-head-mini"><button class="link" data-action="clear">Effacer la sélection</button></div>'
+      ? ''
       : `<div class="pop-head"><b>${esc(f.label)}</b>${f.single ? '' : '<button class="link" data-action="clear">Effacer</button>'}</div>`) +
     (key === 'zone' ? nearBlock() : '') +
     (f.search ? `<input class="pop-search" type="search" placeholder="Rechercher…" />` : '') +
