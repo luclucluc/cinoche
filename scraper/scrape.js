@@ -281,7 +281,8 @@ async function main() {
       movies[mid] ??= movieRecord(movie);
       for (const s of Object.values(groups || {}).flat()) {
         if (!s?.startsAt) continue;
-        showtimes.push([mid, id, s.startsAt.slice(0, 16), versionOf(s, movies[mid]), formatOf(s)]);
+        // 6e champ (facultatif) : 1 si Allociné marque la séance comme avant-première
+        showtimes.push([mid, id, s.startsAt.slice(0, 16), versionOf(s, movies[mid]), formatOf(s), ...(s.isPreview ? [1] : [])]);
         active.add(id);
       }
     }
