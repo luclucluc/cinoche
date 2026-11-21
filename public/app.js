@@ -114,7 +114,9 @@ async function init() {
   }
   for (const [id, m] of Object.entries(P.movies)) {
     m.id = id;
-    m._q = fold([m.title, m.originalTitle, ...m.directors, ...m.cast].join(' '));
+    m.more ??= []; // distribution complète (Wikidata), au-delà des acteurs principaux
+    m._q = fold([m.title, m.originalTitle, ...m.directors, ...m.cast, ...m.more].join(' '));
+    m._people = new Set([...m.directors, ...m.cast, ...m.more].map(fold));
     m.lang = m.languages?.[0] || '';
   }
   for (const [id, t] of Object.entries(P.theaters)) {
@@ -547,7 +549,8 @@ function filteredShows() {
 }
 
 const isHiddenTheater = (t) => state.hiddenChains.size > 0 && state.hiddenChains.has(t.chain);
-const isHiddenMovie = (m) => state.hiddenPeople.size > 0 && [...m.directors, ...m.cast].some((p) => state.hiddenPeople.has(p));
+// Comparaison sans majuscules ni accents : « gerard depardieu » masque « Gérard Depardieu »
+const isHiddenMovie = (m) => state.hiddenPeople.size > 0 && [...state.hiddenPeople].some((p) => m._people.has(fold(p)));
 let hiddenSeen = new Set(); // films masqués par les préférences dans la sélection courante
 
 // ------------------------------------------------------------------ Rendu
@@ -948,7 +951,7 @@ function people() {
   const map = new Map();
   for (const m of Object.values(P.movies)) {
     for (const d of m.directors) { const e = map.get(d) || map.set(d, { name: d, n: 0, dir: false }).get(d); e.n++; e.dir = true; }
-    for (const a of m.cast) { const e = map.get(a) || map.set(a, { name: a, n: 0, dir: false }).get(a); e.n++; }
+    for (const a of [...m.cast, ...m.more]) { const e = map.get(a) || map.set(a, { name: a, n: 0, dir: false }).get(a); e.n++; }
   }
   return (PEOPLE = [...map.values()].map((e) => ({ ...e, q: fold(e.name) })).sort((a, b) => b.n - a.n));
 }
@@ -1014,7 +1017,7 @@ function bindPrefs() {
   const input = $('#personInput'), list = $('#personList');
   let results = [], active = -1;
   const show = () => {
-    list.innerHTML = results.map((p, i) => `<li data-i="${i}" class="${i === active ? 'on' : ''}">${esc(p.name)} <small>${p.dir ? 'réal.' : 'acteur·rice'} · ${p.n} film${p.n > 1 ? 's' : ''}</small></li>`).join('');
+    list.innerHTML = results.map((p, i) => `<li data-i="${i}" class="${i === active ? 'on' : ''}">${esc(p.name)} <small>${p.free ? 'absent du programme actuel — masqué pour les prochains films' : `${p.dir ? 'réal.' : 'acteur·rice'} · ${p.n} film${p.n > 1 ? 's' : ''} à l’affiche`}</small></li>`).join('');
     list.hidden = !results.length;
   };
   const add = (name) => {
@@ -1027,7 +1030,11 @@ function bindPrefs() {
   };
   input.addEventListener('input', () => {
     const q = fold(input.value.trim());
-    results = q.length < 2 ? [] : people().filter((p) => p.q.includes(q) && !state.hiddenPeople.has(p.name)).slice(0, 8);
+    const hidden = new Set([...state.hiddenPeople].map(fold));
+    results = q.length < 2 ? [] : people().filter((p) => p.q.includes(q) && !hidden.has(p.q)).slice(0, 8);
+    // Nom absent du programme : on peut quand même le masquer (films à venir)
+    const typed = input.value.trim().replace(/\s+/g, ' ');
+    if (q.length >= 3 && !results.some((p) => p.q === q) && !hidden.has(q)) results.push({ name: typed, free: true });
     active = -1;
     show();
   });
