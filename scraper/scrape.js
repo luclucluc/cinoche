@@ -40,7 +40,7 @@ async function get(path, { json = true, tries = 6 } = {}) {
   for (let attempt = 1; ; attempt++) {
     await throttle();
     try {
-      const res = await fetch(BASE + path, { headers: { 'User-Agent': UA, 'Accept-Language': 'fr-FR,fr' } });
+      const res = await fetch(BASE + path, { headers: { 'User-Agent': UA, 'Accept-Language': 'fr-FR,fr' }, signal: AbortSignal.timeout(20000) });
       if (res.status === 404) return null;
       if (res.status === 429) {
         // Pause globale (plafonnée à 60 s) : tous les workers attendent.
