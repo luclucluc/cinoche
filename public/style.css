@@ -126,12 +126,15 @@ a { color: inherit; }
 /* ⓧ : réinitialise le filtre, juste à gauche du « + » */
 .chip-clear {
   position: absolute; top: 50%; right: 26px; transform: translateY(-50%);
-  width: 17px; height: 17px; border-radius: 50% !important; border: 1.2px solid currentColor;
-  background: none; color: inherit; padding: 0; font: var(--fs-text)/14px var(--mono); text-align: center; cursor: pointer;
+  width: 16px; height: 16px; padding: 0; border: 0; background: none; color: var(--muted); cursor: pointer;
   opacity: .35; transition: opacity .12s; /* très léger sur les boutons */
 }
-.chip-wrap .chip.active ~ .chip-clear { color: var(--bg); }
+.chip-wrap .chip.active ~ .chip-clear { color: var(--bg); --x-cut: var(--ink); }
 .chip-clear:hover { opacity: 1; }
+/* Pictogramme : disque plein + croix « découpée » (couleur du fond) */
+.x-circle svg, .chip-clear svg { display: block; width: 100%; height: 100%; }
+.x-circle svg circle, .chip-clear svg circle { fill: currentColor; }
+.x-circle svg path, .chip-clear svg path { stroke: var(--x-cut, var(--bg)); stroke-width: 1.6; stroke-linecap: round; fill: none; }
 .filters .chip::after { content: '+'; font-size: 13px; }
 .filters .chip.open::after { content: '−'; }
 .pop.inline { position: static; width: auto; max-height: 420px; box-shadow: none; margin-top: -1px; border-top: 0; }
@@ -160,11 +163,8 @@ a { color: inherit; }
 .seg button.on { background: var(--ink); color: var(--bg); }
 .link { border: 0; background: none; padding: 0; color: inherit; text-decoration: underline; text-underline-offset: 3px; font-size: inherit; }
 /* Croix entourée (même esprit que l'effacement du champ de recherche) */
-.x-circle {
-  width: 17px; height: 17px; flex: none; border-radius: 50% !important; border: 1.2px solid currentColor;
-  background: none; color: var(--muted); padding: 0; font: var(--fs-text)/14px var(--mono); text-align: center; cursor: pointer;
-}
-.x-circle:hover { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.x-circle { width: 16px; height: 16px; flex: none; padding: 0; border: 0; background: none; color: var(--muted); cursor: pointer; }
+.x-circle:hover { color: var(--ink); }
 
 .pop {
   position: fixed; z-index: 50; width: 300px; max-height: min(460px, 70vh); display: flex; flex-direction: column;
@@ -225,10 +225,13 @@ main { padding: 0 var(--pad) 48px var(--gutter); min-height: 60vh; min-width: 0;
 .list-head .cell.on { color: var(--ink); font-weight: 700; text-decoration: underline; text-underline-offset: 4px; }
 
 .item { border-bottom: 1px solid var(--hair); }
+/* Chaque fiche va jusqu'aux bords (colonne de filtres → bord de la fenêtre), contenu inchangé */
+.list .item { margin: 0 calc(-1 * var(--pad)) 0 calc(-1 * var(--gutter)); padding: 0 var(--pad) 0 var(--gutter); }
+.item.open { background: var(--surface); }
 .row { width: 100%; padding: 10px 8px; cursor: pointer; }
 .row:hover { background: var(--hover); }
 .item.open { border-bottom-color: var(--line); }
-.item.open > .row { background: var(--surface); }
+.item.open > .row { background: transparent; }
 .poster { width: var(--poster); aspect-ratio: 3 / 4; background: var(--hair) center / cover; outline: 1px solid var(--line); outline-offset: -1px; }
 .poster.cine { display: grid; place-items: center; background: var(--surface); font-size: var(--fs-text); letter-spacing: .08em; }
 .title { font: 600 var(--fs-title)/1.2 var(--sans); letter-spacing: -0.01em; }
@@ -317,6 +320,7 @@ select { appearance: none; border: 1px solid var(--line); background: var(--surf
 }
 /* Colonne à côté de la carte : bord à bord, retrait seulement à l'intérieur des fiches */
 #results.map-mode .list-col { padding: 0 0 48px; min-width: 0; }
+#results.map-mode .list .item { margin: 0; padding: 0; }
 #results.map-mode .row { padding: 12px 16px; }
 #results.map-mode .group-title { margin: 0; padding: 18px 16px 6px; }
 #results.map-mode .row { grid-template-columns: var(--poster) minmax(0, 1fr) minmax(0, 1fr) auto; }
@@ -420,6 +424,7 @@ body.no-scroll { overflow: hidden; }
   .layout { display: block; }
   main { padding-left: var(--pad); }
   .list-head { margin-left: calc(-1 * var(--pad)); }
+  .list .item { margin-left: calc(-1 * var(--pad)); padding-left: var(--pad); }
   .filters-toggle { display: inline-block; height: 30px; }
   .sidebar {
     display: none; position: fixed; z-index: 55; top: 0; left: 0; bottom: 0; width: min(340px, 92vw); max-height: none; overflow-y: auto;

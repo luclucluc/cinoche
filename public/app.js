@@ -356,7 +356,7 @@ function addClearButtons() {
     wrap.className = 'chip-wrap';
     chip.before(wrap);
     wrap.append(chip);
-    wrap.insertAdjacentHTML('beforeend', `<button class="chip-clear" data-clear="${chip.dataset.f}" title="Réinitialiser ce filtre" aria-label="Réinitialiser ce filtre" hidden>×</button>`);
+    wrap.insertAdjacentHTML('beforeend', `<button class="chip-clear" data-clear="${chip.dataset.f}" title="Réinitialiser ce filtre" aria-label="Réinitialiser ce filtre" hidden><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8" /><path d="M5.4 5.4l5.2 5.2M10.6 5.4l-5.2 5.2" /></svg></button>`);
   }
   document.querySelector('.sidebar').addEventListener('click', (e) => {
     const b = e.target.closest('[data-clear]');
