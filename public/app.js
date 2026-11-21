@@ -178,6 +178,10 @@ function buildDays() {
 
 // Définition des filtres en « puces » avec liste déroulante
 const FILTERS = {
+  tab: {
+    label: 'Sélection', single: true, def: 'all', value: () => state.tab, set: (v) => (state.tab = v),
+    options: () => [['all', 'Tous les films'], ['new', 'Nouveautés'], ['classic', 'Classiques'], ['retro', 'Rétrospectives']],
+  },
   hours: { label: 'Heures', single: true, options: () => HOURS, value: () => state.hours, set: (v) => (state.hours = v), def: '0' },
   zone: {
     label: 'Lieu',
@@ -350,7 +354,6 @@ function bindControls() {
       if (key === 'version') store.set('version', state.version);
       render();
     });
-  seg('#tabs', 'tab', 'tab');
   seg('#view', 'view', 'view');
   seg('#version', 'version', 'v');
   seg('#days', 'date', 'date');
@@ -559,6 +562,9 @@ function ageDays(m) {
   return (ref - new Date(m.release)) / 864e5;
 }
 const isNew = (m) => ageDays(m) < 35; // sorties des 5 dernières semaines et avant-premières
+// Avant-première : au moins une séance affichée avant la date de sortie (hors reprises de classiques),
+// ou séance marquée comme telle par Allociné (6e champ)
+const isPreviewShowing = (m, shows) => shows.some((s) => s[5] === 1 || (m.release && s[2].slice(0, 10) < m.release && !isClassic(m)));
 const isClassic = (m) => ageDays(m) > 730 || (m.year && new Date(refDate()).getFullYear() - m.year >= 3);
 
 function hourOk(time) {
@@ -609,7 +615,6 @@ let current = { shows: [], byKey: new Map() };
 
 function render() {
   // états visuels des contrôles
-  for (const b of $('#tabs').querySelectorAll('[data-tab]')) b.classList.toggle('on', b.dataset.tab === state.tab);
   for (const b of $('#view').children) b.classList.toggle('on', b.dataset.view === state.view);
   for (const b of $('#version').children) b.classList.toggle('on', b.dataset.v === state.version);
   for (const b of $('#days').children) b.classList.toggle('on', b.dataset.date === state.date);
@@ -622,7 +627,6 @@ function render() {
   $('#reset').hidden = !Object.keys(FILTERS).some(isActive) && !state.version;
   $('#mapBox').hidden = !isMap;
   document.querySelector('.chip[data-f="sort"]').hidden = isMap; // le tri concerne la liste des films
-  $('.results-bar').classList.toggle('is-map', isMap); // en vue carte : ni compteur ni tri au-dessus de la carte
   $('#results').classList.toggle('map-mode', isMap);
   document.documentElement.style.setProperty('--ncells', visibleRatings().length);
   setStatus(''); // rien au-dessus de la carte
@@ -635,8 +639,6 @@ function render() {
   const items = films ? groupByMovie(shows) : groupByTheater(shows);
 
   $('#empty').hidden = shows.length > 0;
-  const nF = new Set(shows.map((s) => s[0])).size, nC = new Set(shows.map((s) => s[1])).size;
-  $('#resultsCount').textContent = shows.length ? `${nF} film${nF > 1 ? 's' : ''} · ${shows.length} séance${shows.length > 1 ? 's' : ''} · ${nC} cinéma${nC > 1 ? 's' : ''}` : '';
 
   // En-tête des colonnes (vue Films)
   $('#listHead').hidden = !films || !shows.length;
@@ -685,7 +687,7 @@ function groupByMovie(shows) {
 
   const card = (x) => {
     const key = 'm' + x.m.id;
-    return { key, m: x.m, shows: x.shows, theaters: x.theaters, html: movieRow(key, x.m) };
+    return { key, m: x.m, shows: x.shows, theaters: x.theaters, html: movieRow(key, x.m, x.shows) };
   };
 
   if (state.tab !== 'retro') return list.map(card);
@@ -748,13 +750,14 @@ function bookmark(m) {
   return `<button class="mfav${st ? ' ' + st : ''}" data-id="${m.id}" title="${label}" aria-label="${label}"><svg viewBox="0 0 24 24" aria-hidden="true">${icon}</svg></button>`;
 }
 
-function movieRow(key, m) {
+function movieRow(key, m, shows = []) {
+  const ap = isPreviewShowing(m, shows);
   const open = state.open.has(key) ? ' open' : '';
   const orig = m.originalTitle ? `<small>${esc(m.originalTitle)}</small>` : '';
   return `<li class="item${open}" data-key="${key}">
     <div class="row" role="button" tabindex="0">
       <span class="poster" style="background-image:url('${POSTER(m.poster)}')"></span>
-      <span class="title">${esc(m.title)}${bookmark(m)}${orig}</span>
+      <span class="title with-fav">${ap ? '<span class="ap" title="Avant-première">Avant<br>première</span>' : ''}<span${!ap && isNew(m) ? ' class="is-new" title="Nouveauté"' : ''}>${esc(m.title)}${orig}</span>${bookmark(m)}</span>
       <span class="who"><span>${esc(m.directors.slice(0, 2).join(', ') || '—')}</span><span class="year">${esc(m.year || '')}</span></span>
       ${ratingCells(m)}
     </div>
