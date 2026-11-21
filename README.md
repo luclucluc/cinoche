@@ -26,12 +26,17 @@ Aucune dépendance npm : il faut seulement Node ≥ 20.
 - **Recherche** sur le titre, le titre original, le réalisateur, les acteurs et le cinéma (touche `/`).
 - L'URL est partageable (`#d=…&tab=…&view=…&q=…`). Elle ne contient jamais la position.
 
-## Pas de compte : tout reste dans le navigateur
+## Préférences (sans compte)
 
-Les préférences sont enregistrées dans le `localStorage` du navigateur (clés `pc.*`) :
-cinémas favoris, position ou adresse, rayon, version VO/VF, zone et thème.
-Rien n'est envoyé à un serveur, et le lien « Tout effacer » en pied de page supprime tout.
-Contrepartie : ces préférences ne se synchronisent pas entre appareils.
+Le pictogramme en haut à droite ouvre les préférences :
+- **thème** : clair, sombre ou réglage du système ;
+- **films masqués par acteur ou réalisateur**, avec autocomplétion sur tous les noms du programme ;
+- **enseignes masquées** : UGC, Pathé (et ex-Gaumont), MK2, CGR, Mégarama, Dulac Cinémas ([public/chains.js](public/chains.js)) ;
+- **transfert** : export en fichier `.json` ou en code à copier-coller (`PC1:…`), puis import dans un autre navigateur ou un autre ordinateur.
+
+Tout est stocké dans le `localStorage` du navigateur (clés `pc.*`) : préférences, favoris, cartes, position et rayon. Rien n'est envoyé à un serveur, et « Tout effacer » supprime tout.
+
+Le filtre « Lieu » propose aussi un bloc « Autour de… » : on y choisit un point (sa position ou une adresse) et une distance, de 500 m à 10 km.
 
 Seuls appels externes depuis le navigateur : le fond de carte OpenStreetMap, Leaflet (unpkg) et, quand vous saisissez une adresse, l'API Adresse de l'IGN (le texte saisi lui est transmis).
 

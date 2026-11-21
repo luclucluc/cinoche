@@ -11,16 +11,14 @@
   </head>
   <body>
     <header class="top">
-      <div class="clap" aria-hidden="true"></div>
       <div class="top-inner">
-        <a class="logo" href="./">Paris<span>+</span>Ciné</a>
         <label class="search">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
           <input id="q" type="search" placeholder="Film, réalisateur, acteur, cinéma…" autocomplete="off" />
           <kbd>/</kbd>
         </label>
-        <button id="theme" class="icon-btn" title="Changer de thème" aria-label="Changer de thème">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z" /></svg>
+        <button id="prefsBtn" class="icon-btn" title="Préférences" aria-label="Préférences" aria-haspopup="dialog">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0" /><path d="M14 4v4M8 10v4M16 16v4" /></svg>
         </button>
       </div>
 
@@ -90,9 +88,59 @@
 
     <footer class="foot">
       <span id="updated"></span>
-      <span>Vos préférences (favoris, position, thème) restent dans ce navigateur. <button id="forget" class="link">Tout effacer</button></span>
+      <span>Vos préférences restent dans ce navigateur — <button class="link" data-open-prefs>exporter / importer</button></span>
       <span>Données : Allociné · Adresses : BAN · Carte : OpenFreeMap / OpenStreetMap</span>
     </footer>
+
+    <!-- Préférences -->
+    <div class="prefs-overlay" id="prefsOverlay" hidden></div>
+    <aside class="prefs" id="prefs" role="dialog" aria-modal="true" aria-labelledby="prefsTitle" hidden>
+      <div class="prefs-head">
+        <b id="prefsTitle">Préférences</b>
+        <button class="icon-btn" id="prefsClose" aria-label="Fermer">✕</button>
+      </div>
+
+      <section>
+        <h3>Apparence</h3>
+        <div class="seg" id="themeSeg">
+          <button data-theme="light">Clair</button>
+          <button data-theme="dark">Sombre</button>
+          <button data-theme="">Système</button>
+        </div>
+      </section>
+
+      <section>
+        <h3>Masquer des films par acteur ou réalisateur</h3>
+        <div class="addr">
+          <input id="personInput" type="search" placeholder="Nom d’un acteur ou d’un réalisateur…" autocomplete="off" />
+          <ul id="personList" class="suggest" hidden></ul>
+        </div>
+        <ul class="tags" id="hiddenPeople"></ul>
+        <p class="hint" id="peopleHint"></p>
+      </section>
+
+      <section>
+        <h3>Masquer des enseignes</h3>
+        <div class="checks" id="chainList"></div>
+      </section>
+
+      <section>
+        <h3>Transférer mes préférences</h3>
+        <p class="hint">Tout est enregistré dans ce navigateur (thème, favoris, films et enseignes masqués, cartes, position…). Exportez-le pour le retrouver sur un autre navigateur ou un autre ordinateur.</p>
+        <div class="btns">
+          <button class="btn" id="exportFile">Télécharger le fichier</button>
+          <button class="btn" id="copyCode">Copier le code</button>
+          <label class="btn">Importer un fichier<input type="file" id="importFile" accept=".json,application/json" hidden /></label>
+        </div>
+        <textarea id="importCode" rows="3" placeholder="…ou collez ici un code copié depuis un autre navigateur"></textarea>
+        <div class="btns"><button class="btn" id="importCodeBtn">Importer le code</button></div>
+        <p class="hint" id="ioStatus"></p>
+      </section>
+
+      <section>
+        <button class="link" id="forget">Tout effacer de ce navigateur</button>
+      </section>
+    </aside>
 
     <script type="module" src="app.js"></script>
   </body>

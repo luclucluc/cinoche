@@ -59,7 +59,8 @@ function frenchLabels(gl) {
 
 const isDark = () => document.documentElement.dataset.theme === 'dark';
 
-export const fmtDistance = (m) => (m < 1000 ? `${Math.round(m / 10) * 10} m` : `${(m / 1000).toFixed(m < 10000 ? 1 : 0).replace('.', ',')} km`);
+export const fmtDistance = (m) =>
+  m < 1000 ? `${Math.round(m / 10) * 10} m` : `${(m / 1000).toFixed(m < 10000 && m % 1000 ? 1 : 0).replace('.', ',')} km`;
 
 export class CineMap {
   constructor(el, { onPick, onSelect }) {

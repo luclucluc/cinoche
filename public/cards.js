@@ -5,7 +5,7 @@
 
 export const CARDS = [
   { id: 'ugc', label: 'UGC Illimité', match: /^(UGC|MK2)\b/i, extra: [] }, // UGC + MK2 (accord de réciprocité)
-  { id: 'pathe', label: 'CinéPass Pathé (ex-Le Pass Gaumont)', match: /^(Path[ée]|Gaumont)\b/i, extra: [] },
+  { id: 'pathe', label: 'CinéPass Pathé (ex-Le Pass Gaumont)', match: /^(Path[ée]|Gaumont)(\s|$)/i, extra: [] },
   { id: 'ugc5', label: 'UGC « la carte » 5 places', match: /^UGC\b/i, extra: [] },
   { id: 'mk2', label: 'Carte MK2 5 places', match: /^MK2\b/i, extra: [] },
   { id: 'cinecheque', label: 'Cinéchèques', match: null, extra: [], source: 'cinecheque' },

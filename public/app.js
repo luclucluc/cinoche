@@ -3,6 +3,7 @@
 
 import { CineMap, distance, fmtDistance, searchAddress } from './map.js';
 import { CARDS, acceptsCard } from './cards.js';
+import { CHAINS, chainOf } from './chains.js';
 
 const $ = (s) => document.querySelector(s);
 const POSTER = (p) => (p ? `https://fr.web.img3.acsta.net/c_160_213${p}` : '');
@@ -77,6 +78,8 @@ const state = {
   sort: 'copies',
   q: '',
   favs: new Set(store.get('favs', [])),
+  hiddenPeople: new Set(store.get('hiddenPeople', [])), // acteurs / réalisateurs masqués
+  hiddenChains: new Set(store.get('hiddenChains', [])), // enseignes masquées
   open: new Set(),
   geo: store.get('geo', null), // { lat, lon, label } — reste dans ce navigateur
   radius: store.get('radius', 2000),
@@ -113,6 +116,7 @@ async function init() {
   for (const [id, t] of Object.entries(P.theaters)) {
     t.id = id;
     t._q = fold(t.name + ' ' + t.area);
+    t.chain = chainOf(t);
     t.dept ??= t.address.match(/\b(75|9[1-5])\d{3}\b/)?.[1] || (t.area.startsWith('Paris ') ? '75' : null);
   }
   const today = parisNow().date;
@@ -145,7 +149,7 @@ function parisNow() {
 const dayLabel = (d, today = parisNow().date) => {
   const dt = new Date(d + 'T12:00:00');
   const diff = Math.round((dt - new Date(today + 'T12:00:00')) / 864e5);
-  return diff === 0 ? 'Aujourd’hui' : diff === 1 ? 'Demain' : dt.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: diff > 6 ? 'short' : undefined });
+  return diff === 0 ? 'Aujourd’hui' : dt.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: diff > 6 ? 'short' : undefined });
 };
 
 // ------------------------------------------------------------------ Contrôles
@@ -169,7 +173,6 @@ const FILTERS = {
         ['', 'Paris & petite couronne'],
         ['@paris', 'Paris intra-muros'],
         ['@banlieue', 'Petite couronne (92, 93, 94)'],
-        ...(state.geo ? [['@near', `À moins de ${fmtDistance(state.radius)} de ${state.geo.label}`]] : []),
         { group: 'Arrondissements' },
         ...arr.map((a) => [a, a]),
       ];
@@ -183,13 +186,13 @@ const FILTERS = {
     value: () => state.zone,
     set: (v) => { state.zone = v; store.set('zone', v); },
     def: '',
-    short: (v) => ({ '': 'Paris & petite couronne', '@paris': 'Paris', '@banlieue': 'Petite couronne', '@near': `${fmtDistance(state.radius)} autour` })[v] ?? (DEPTS[v.slice(1)] || v),
+    short: (v) => ({ '': 'Paris & petite couronne', '@paris': 'Paris', '@banlieue': 'Petite couronne', '@near': `${fmtDistance(state.radius)} autour de ${state.geo?.label || '…'}` })[v] ?? (DEPTS[v.slice(1)] || v),
   },
   cinemas: {
     label: 'Cinémas',
     search: true,
     options: () => {
-      const all = Object.values(P.theaters).sort(byPlace);
+      const all = Object.values(P.theaters).filter((t) => !isHiddenTheater(t)).sort(byPlace);
       const favs = all.filter((t) => state.favs.has(t.id));
       const out = [];
       if (favs.length) out.push({ group: '★ Mes favoris', action: 'favs' }, ...favs.map((t) => [t.id, t.name, t.area]));
@@ -258,6 +261,7 @@ function openPop(key, chip) {
     .join('');
   pop.innerHTML =
     `<div class="pop-head"><b>${esc(f.label)}</b>${f.single ? '' : '<button class="link" data-action="clear">Effacer</button>'}</div>` +
+    (key === 'zone' ? nearBlock() : '') +
     (f.search ? `<input class="pop-search" type="search" placeholder="Rechercher…" />` : '') +
     (f.note ? `<p class="pop-note">${esc(f.note)}</p>` : '') +
     `<ul class="pop-list">${rows}</ul>`;
@@ -269,6 +273,34 @@ function openPop(key, chip) {
   for (const c of document.querySelectorAll('.chip')) c.classList.toggle('open', c === chip);
   pop.querySelector('.pop-search')?.focus();
 }
+// Bloc « Autour de… » du filtre Lieu : point (position ou adresse) + distance
+const RADII = [500, 1000, 2000, 3000, 5000, 10000];
+let nearResults = [], nearMsg = '';
+function nearBlock() {
+  const on = state.zone === '@near';
+  return `<div class="pop-near${on ? ' on' : ''}">
+    <p class="pop-near-title">Autour de : <b>${state.geo ? esc(state.geo.label) : 'aucun point'}</b></p>
+    <div class="pop-near-row">
+      <button class="btn" data-action="locate">Ma position</button>
+      <div class="pop-addr-wrap"><input class="pop-addr" type="search" placeholder="ou une adresse…" autocomplete="off" /><ul class="suggest pop-addr-list" hidden></ul></div>
+    </div>
+    <div class="seg pop-radius">${RADII.map((r) => `<button data-action="radius" data-r="${r}" class="${on && state.radius === r ? 'on' : ''}">${fmtDistance(r)}</button>`).join('')}</div>
+    ${nearMsg ? `<p class="pop-note">${esc(nearMsg)}</p>` : ''}
+  </div>`;
+}
+function reopenPop(key) {
+  const chip = document.querySelector(`.chip[data-f="${key}"]`);
+  closePop();
+  render();
+  openPop(key, chip);
+}
+function useNear(geo) {
+  if (geo) { state.geo = geo; state.selected = null; store.set('geo', geo); $('#addr').value = geo.label; }
+  FILTERS.zone.set('@near');
+  nearMsg = '';
+  reopenPop('zone');
+}
+
 function closePop() {
   popKey = null;
   $('#pop').hidden = true;
@@ -323,6 +355,25 @@ function bindControls() {
   pop.addEventListener('click', (e) => {
     const a = e.target.closest('[data-action]');
     if (!a) return;
+    // Bloc « Autour de… »
+    if (a.dataset.action === 'radius') {
+      state.radius = Number(a.dataset.r);
+      store.set('radius', state.radius);
+      if (state.geo) return useNear();
+      nearMsg = 'Choisissez d’abord un point : votre position ou une adresse.';
+      return reopenPop('zone');
+    }
+    if (a.dataset.action === 'addr') return useNear(nearResults[a.dataset.i]);
+    if (a.dataset.action === 'locate') {
+      if (!navigator.geolocation) { nearMsg = 'Géolocalisation indisponible dans ce navigateur.'; return reopenPop('zone'); }
+      a.textContent = 'Localisation…';
+      navigator.geolocation.getCurrentPosition(
+        (pos) => useNear({ lat: pos.coords.latitude, lon: pos.coords.longitude, label: 'Ma position' }),
+        () => { nearMsg = 'Position refusée ou introuvable : saisissez plutôt une adresse.'; reopenPop('zone'); },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+      );
+      return;
+    }
     const f = FILTERS[popKey];
     if (a.dataset.action === 'clear') state[popKey].clear();
     if (a.dataset.action === 'favs') for (const id of state.favs) state[popKey].add(id);
@@ -332,7 +383,20 @@ function bindControls() {
     render();
     openPop(key, chip);
   });
+  let addrTimer;
   pop.addEventListener('input', (e) => {
+    if (e.target.classList.contains('pop-addr')) {
+      clearTimeout(addrTimer);
+      const q = e.target.value.trim();
+      const list = pop.querySelector('.pop-addr-list');
+      if (q.length < 3) { list.hidden = true; return; }
+      addrTimer = setTimeout(async () => {
+        try { nearResults = await searchAddress(q, state.geo || undefined); } catch { nearResults = []; }
+        list.innerHTML = nearResults.map((r, i) => `<li data-action="addr" data-i="${i}">${esc(r.label)}</li>`).join('');
+        list.hidden = !nearResults.length;
+      }, 250);
+      return;
+    }
     if (!e.target.classList.contains('pop-search')) return;
     const q = fold(e.target.value.trim());
     for (const o of pop.querySelectorAll('.pop-opt')) o.parentElement.hidden = q && !o.dataset.q.includes(q);
@@ -375,18 +439,7 @@ function bindControls() {
 
   bindGeo();
 
-  $('#forget').onclick = () => {
-    if (!confirm('Effacer favoris, position et préférences enregistrés dans ce navigateur ?')) return;
-    Object.keys(localStorage).filter((k) => k.startsWith('pc.')).forEach((k) => localStorage.removeItem(k));
-    location.href = location.pathname;
-  };
-
-  $('#theme').onclick = () => {
-    const dark = document.documentElement.dataset.theme !== 'dark';
-    store.set('theme', dark ? 'dark' : 'light');
-    applyTheme(dark ? 'dark' : 'light');
-    if (state.view === 'map') render();
-  };
+  bindPrefs();
   window.addEventListener('hashchange', () => { readHash(); render(); });
 }
 
@@ -453,6 +506,7 @@ function hourOk(time) {
 function filteredShows() {
   const now = parisNow();
   const nowStamp = `${now.date}T${now.time}`;
+  hiddenSeen = new Set();
   const q = fold(state.q);
   const tabOk = { all: () => true, new: isNew, classic: isClassic, retro: isClassic }[state.tab] || (() => true);
   const cards = CARDS.filter((c) => state.cards.has(c.id));
@@ -464,7 +518,7 @@ function filteredShows() {
     if (state.version && s[3] !== state.version) return false;
     if (state.formats.size && !formatsOf(s).some((f) => state.formats.has(f))) return false;
     const t = P.theaters[s[1]];
-    if (!t || !inZone(t)) return false;
+    if (!t || isHiddenTheater(t) || !inZone(t)) return false;
     if (state.cinemas.size && state.view !== 'map' && !state.cinemas.has(t.id)) return false;
     if (cards.length && !cards.some((c) => acceptsCard(c, t, P.cards))) return false;
     const m = P.movies[s[0]];
@@ -472,9 +526,14 @@ function filteredShows() {
     if (state.langs.size && !state.langs.has(m.lang)) return false;
     if (state.genres.size && !m.genres.some((g) => state.genres.has(g))) return false;
     if (q && !m._q.includes(q) && !t._q.includes(q)) return false;
+    if (isHiddenMovie(m)) { hiddenSeen.add(m.id); return false; } // en dernier : compte les films réellement masqués
     return true;
   });
 }
+
+const isHiddenTheater = (t) => state.hiddenChains.size > 0 && state.hiddenChains.has(t.chain);
+const isHiddenMovie = (m) => state.hiddenPeople.size > 0 && [...m.directors, ...m.cast].some((p) => state.hiddenPeople.has(p));
+let hiddenSeen = new Set(); // films masqués par les préférences dans la sélection courante
 
 // ------------------------------------------------------------------ Rendu
 
@@ -519,8 +578,9 @@ function render() {
     ['Films', nFilms],
     ['Séances', shows.length],
     ['Salles', nCines],
+    ...(hiddenSeen.size ? [['Masqués', `${hiddenSeen.size} film${hiddenSeen.size > 1 ? 's' : ''}`, 'prefs']] : []),
     ['Màj', upd],
-  ].map(([k, v]) => `<span><b>${esc(k)}</b>${esc(v)}</span>`).join('');
+  ].map(([k, v, act]) => (act ? `<button class="slate-btn" data-open-prefs><b>${esc(k)}</b>${esc(v)}</button>` : `<span><b>${esc(k)}</b>${esc(v)}</span>`)).join('');
   $('#empty').hidden = shows.length > 0;
 
   // En-tête des colonnes (vue Films)
@@ -799,7 +859,7 @@ async function updateMap(shows) {
   const films = new Map();
   for (const s of shows) (films.get(s[1]) || films.set(s[1], new Set()).get(s[1])).add(s[0]);
   const points = Object.values(P.theaters)
-    .filter(hasCoords)
+    .filter((t) => hasCoords(t) && !isHiddenTheater(t))
     .map((t) => ({ id: t.id, name: t.name, lat: t.lat, lon: t.lon, count: films.get(t.id)?.size || 0, inside: !state.geo || dist(t) <= state.radius }));
   try {
     await cineMap.update({ points, geo: state.geo, radius: state.radius, selected: state.selected });
@@ -816,4 +876,173 @@ function selectTheater(id) {
   const li = document.getElementById(key);
   if (li) li.scrollIntoView({ behavior: 'smooth', block: 'center' });
   else setStatus(`${P.theaters[id].name} : aucune séance avec ces filtres.`);
+}
+
+// ------------------------------------------------------------------ Préférences
+
+const PREFS_APP = 'paris-cine';
+const CODE_PREFIX = 'PC1:';
+
+function openPrefs() {
+  closePop();
+  renderPrefs();
+  $('#prefs').hidden = $('#prefsOverlay').hidden = false;
+  document.body.classList.add('no-scroll');
+  $('#prefsClose').focus();
+}
+function closePrefs() {
+  $('#prefs').hidden = $('#prefsOverlay').hidden = true;
+  document.body.classList.remove('no-scroll');
+}
+
+// Tous les noms (réalisateurs et acteurs) du programme, les plus fréquents d'abord
+let PEOPLE = null;
+function people() {
+  if (PEOPLE) return PEOPLE;
+  const map = new Map();
+  for (const m of Object.values(P.movies)) {
+    for (const d of m.directors) { const e = map.get(d) || map.set(d, { name: d, n: 0, dir: false }).get(d); e.n++; e.dir = true; }
+    for (const a of m.cast) { const e = map.get(a) || map.set(a, { name: a, n: 0, dir: false }).get(a); e.n++; }
+  }
+  return (PEOPLE = [...map.values()].map((e) => ({ ...e, q: fold(e.name) })).sort((a, b) => b.n - a.n));
+}
+
+function renderPrefs() {
+  const pref = store.get('theme', null) || '';
+  for (const b of $('#themeSeg').children) b.classList.toggle('on', b.dataset.theme === pref);
+
+  const names = [...state.hiddenPeople].sort((a, b) => a.localeCompare(b, 'fr'));
+  $('#hiddenPeople').innerHTML = names.map((n) => `<li><span>${esc(n)}</span><button data-unhide="${esc(n)}" aria-label="Ne plus masquer ${esc(n)}">✕</button></li>`).join('');
+  const films = Object.values(P.movies).filter(isHiddenMovie).length;
+  $('#peopleHint').textContent = names.length ? `${films} film${films > 1 ? 's' : ''} du programme masqué${films > 1 ? 's' : ''}.` : 'Aucun nom masqué.';
+
+  const count = (id) => Object.values(P.theaters).filter((t) => t.chain === id).length;
+  $('#chainList').innerHTML = CHAINS.map(
+    (c) => `<label class="pop-opt"><input type="checkbox" value="${c.id}" ${state.hiddenChains.has(c.id) ? 'checked' : ''} /><span>${esc(c.label)}</span><small>${count(c.id)} salles</small></label>`
+  ).join('');
+}
+
+function savePrefsAndRender() {
+  store.set('hiddenPeople', [...state.hiddenPeople]);
+  store.set('hiddenChains', [...state.hiddenChains]);
+  renderPrefs();
+  render();
+}
+
+function exportPrefs() {
+  const prefs = {};
+  for (const k of Object.keys(localStorage)) if (k.startsWith('pc.')) prefs[k.slice(3)] = JSON.parse(localStorage.getItem(k));
+  return { app: PREFS_APP, version: 1, exportedAt: new Date().toISOString(), prefs };
+}
+const toCode = (obj) => CODE_PREFIX + btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(obj))));
+const fromCode = (code) => JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(code.trim().slice(CODE_PREFIX.length)), (c) => c.charCodeAt(0))));
+
+function importPrefs(data) {
+  if (data?.app !== PREFS_APP || typeof data.prefs !== 'object') throw new Error('Ce fichier ne contient pas de préférences Paris Ciné.');
+  Object.keys(localStorage).filter((k) => k.startsWith('pc.')).forEach((k) => localStorage.removeItem(k));
+  for (const [k, v] of Object.entries(data.prefs)) localStorage.setItem('pc.' + k, JSON.stringify(v));
+  location.reload();
+}
+
+function bindPrefs() {
+  $('#prefsBtn').onclick = openPrefs;
+  $('#prefsClose').onclick = closePrefs;
+  $('#prefsOverlay').onclick = closePrefs;
+  document.addEventListener('click', (e) => { if (e.target.closest('[data-open-prefs]')) openPrefs(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#prefs').hidden) closePrefs(); });
+
+  $('#themeSeg').onclick = (e) => {
+    const b = e.target.closest('[data-theme]');
+    if (!b) return;
+    store.set('theme', b.dataset.theme || null);
+    applyTheme(b.dataset.theme || null);
+    renderPrefs();
+    if (state.view === 'map') render();
+  };
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => applyTheme(store.get('theme', null)));
+
+  // Personnes masquées : autocomplétion
+  const input = $('#personInput'), list = $('#personList');
+  let results = [], active = -1;
+  const show = () => {
+    list.innerHTML = results.map((p, i) => `<li data-i="${i}" class="${i === active ? 'on' : ''}">${esc(p.name)} <small>${p.dir ? 'réal.' : 'acteur·rice'} · ${p.n} film${p.n > 1 ? 's' : ''}</small></li>`).join('');
+    list.hidden = !results.length;
+  };
+  const add = (name) => {
+    state.hiddenPeople.add(name);
+    input.value = '';
+    results = [];
+    show();
+    savePrefsAndRender();
+    input.focus();
+  };
+  input.addEventListener('input', () => {
+    const q = fold(input.value.trim());
+    results = q.length < 2 ? [] : people().filter((p) => p.q.includes(q) && !state.hiddenPeople.has(p.name)).slice(0, 8);
+    active = -1;
+    show();
+  });
+  input.addEventListener('keydown', (e) => {
+    if (list.hidden) return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      active = (active + (e.key === 'ArrowDown' ? 1 : -1) + results.length) % results.length;
+      show();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      add(results[Math.max(active, 0)].name);
+    } else if (e.key === 'Escape') { e.stopPropagation(); results = []; show(); }
+  });
+  list.addEventListener('mousedown', (e) => {
+    const li = e.target.closest('li');
+    if (li) { e.preventDefault(); add(results[li.dataset.i].name); }
+  });
+  input.addEventListener('blur', () => setTimeout(() => { list.hidden = true; }, 100));
+  $('#hiddenPeople').onclick = (e) => {
+    const b = e.target.closest('[data-unhide]');
+    if (b) { state.hiddenPeople.delete(b.dataset.unhide); savePrefsAndRender(); }
+  };
+
+  // Enseignes masquées
+  $('#chainList').onchange = (e) => {
+    e.target.checked ? state.hiddenChains.add(e.target.value) : state.hiddenChains.delete(e.target.value);
+    savePrefsAndRender();
+  };
+
+  // Export / import
+  const status = (msg) => ($('#ioStatus').textContent = msg);
+  $('#exportFile').onclick = () => {
+    const blob = new Blob([JSON.stringify(exportPrefs(), null, 2)], { type: 'application/json' });
+    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `paris-cine-preferences-${new Date().toISOString().slice(0, 10)}.json` });
+    a.click();
+    URL.revokeObjectURL(a.href);
+    status('Fichier téléchargé. Importez-le dans l’autre navigateur.');
+  };
+  $('#copyCode').onclick = async () => {
+    const code = toCode(exportPrefs());
+    try {
+      await navigator.clipboard.writeText(code);
+      status('Code copié. Collez-le dans l’autre navigateur, puis « Importer le code ».');
+    } catch {
+      $('#importCode').value = code;
+      $('#importCode').select();
+      status('Copiez le code sélectionné ci-dessus.');
+    }
+  };
+  $('#importFile').onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try { importPrefs(JSON.parse(await file.text())); } catch (err) { status(err.message.startsWith('Ce fichier') ? err.message : 'Fichier illisible.'); }
+  };
+  $('#importCodeBtn').onclick = () => {
+    const code = $('#importCode').value.trim();
+    if (!code.startsWith(CODE_PREFIX)) return status('Ce code n’est pas un code de préférences Paris Ciné.');
+    try { importPrefs(fromCode(code)); } catch { status('Code invalide ou incomplet.'); }
+  };
+
+  $('#forget').onclick = () => {
+    if (!confirm('Effacer toutes les préférences enregistrées dans ce navigateur (thème, favoris, masquages, position…) ?')) return;
+    Object.keys(localStorage).filter((k) => k.startsWith('pc.')).forEach((k) => localStorage.removeItem(k));
+    location.href = location.pathname;
+  };
 }
