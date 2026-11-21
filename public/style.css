@@ -121,6 +121,7 @@ a { color: inherit; }
 .filters .chip { width: 100%; text-align: left; padding: 9px 26px 9px 10px; white-space: normal; }
 .filters .chip + .chip, .filters .pop.inline + .chip { margin-top: -1px; }
 .chip-wrap { position: relative; }
+.filters > .chip-wrap:first-child .chip { border-top: 0; } /* « Sélection » : pas de double filet sous « Filtres » */
 .filters .chip-wrap + .chip-wrap, .filters .pop.inline + .chip-wrap { margin-top: -1px; }
 .chip-wrap .chip { padding-right: 50px; }
 /* ⓧ : réinitialise le filtre, juste à gauche du « + » */
