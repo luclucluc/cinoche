@@ -622,9 +622,10 @@ function render() {
   $('#reset').hidden = !Object.keys(FILTERS).some(isActive) && !state.version;
   $('#mapBox').hidden = !isMap;
   document.querySelector('.chip[data-f="sort"]').hidden = isMap; // le tri concerne la liste des films
+  $('.results-bar').classList.toggle('is-map', isMap); // en vue carte : ni compteur ni tri au-dessus de la carte
   $('#results').classList.toggle('map-mode', isMap);
   document.documentElement.style.setProperty('--ncells', visibleRatings().length);
-  setStatus(isMap && state.zone !== '@near' ? 'Astuce : cliquez sur la carte (ou utilisez « Lieu → Autour de… ») pour chercher autour d’un point.' : '');
+  setStatus(''); // rien au-dessus de la carte
   $('#days .on')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   writeHash();
 

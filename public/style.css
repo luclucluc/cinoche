@@ -173,6 +173,8 @@ main { padding: 0 var(--pad) 48px var(--gutter); min-height: 60vh; min-width: 0;
 .results-bar { position: sticky; top: var(--header-h, 0px); z-index: 3; background: var(--bg); display: flex; align-items: center; gap: 8px; padding: 12px 0; flex-wrap: wrap; }
 .results-count { margin-left: auto; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
 .filters-toggle { display: none; }
+.results-bar.is-map .results-count { display: none; }
+@media (min-width: 861px) { .results-bar.is-map { display: none; } }
 
 /* ---------- Liste ---------- */
 .list { list-style: none; margin: 0; padding: 0; }
