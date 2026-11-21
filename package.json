@@ -1,0 +1,13 @@
+{
+  "name": "paris-cine",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Programme des cinémas de Paris et proche banlieue — interface minimaliste",
+  "scripts": {
+    "scrape": "node scraper/scrape.js",
+    "scrape:quick": "node scraper/scrape.js --days 2 --paris-only",
+    "start": "node server.js"
+  },
+  "engines": { "node": ">=20" }
+}

@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Paris Ciné — toutes les séances de Paris</title>
+    <meta name="description" content="Le programme de tous les cinémas de Paris et de la proche banlieue, en un coup d'œil." />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='%23e5484d'/></svg>" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="top">
+      <div class="top-inner">
+        <a class="logo" href="./">paris<span>·</span>ciné</a>
+        <label class="search">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+          <input id="q" type="search" placeholder="Film, réalisateur, acteur, cinéma…" autocomplete="off" />
+          <kbd>/</kbd>
+        </label>
+        <button id="theme" class="icon-btn" title="Changer de thème" aria-label="Changer de thème">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z" /></svg>
+        </button>
+      </div>
+
+      <nav class="tabs" id="tabs" aria-label="Sélection">
+        <button data-tab="all" class="on">Tous les films</button>
+        <button data-tab="new">Nouveautés</button>
+        <button data-tab="classic">Classiques</button>
+        <button data-tab="retro">Rétrospectives</button>
+        <span class="spacer"></span>
+        <div class="seg" id="view" role="group" aria-label="Vue">
+          <button data-view="films" class="on">Films</button>
+          <button data-view="cinemas">Cinémas</button>
+          <button data-view="map">Carte</button>
+        </div>
+      </nav>
+
+      <div class="days" id="days" role="tablist" aria-label="Jour"></div>
+
+      <div class="geo" id="geo" hidden>
+        <button id="locate" class="pill" title="Utiliser ma position">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3" /><circle cx="12" cy="12" r="7" /></svg>
+          Ma position
+        </button>
+        <div class="addr">
+          <input id="addr" type="search" placeholder="ou une adresse : 12 rue de Rivoli…" autocomplete="off" aria-label="Adresse" />
+          <ul id="addrList" class="suggest" hidden></ul>
+        </div>
+        <select id="radius" aria-label="Rayon">
+          <option value="500">500 m</option>
+          <option value="1000">1 km</option>
+          <option value="2000">2 km</option>
+          <option value="3000">3 km</option>
+          <option value="5000">5 km</option>
+          <option value="10000">10 km</option>
+        </select>
+      </div>
+      <p class="geo-status" id="geoStatus" hidden></p>
+
+      <div class="filters">
+        <div class="seg" id="version" role="group" aria-label="Version">
+          <button data-v="" class="on">Toutes</button>
+          <button data-v="VO">VO</button>
+          <button data-v="VF">VF</button>
+        </div>
+        <select id="from" aria-label="Horaire">
+          <option value="0">Toute la journée</option>
+          <option value="now">À partir de maintenant</option>
+          <option value="12">Après 12 h</option>
+          <option value="18">Après 18 h</option>
+          <option value="20">Après 20 h</option>
+          <option value="22">Après 22 h</option>
+        </select>
+        <select id="zone" aria-label="Zone"></select>
+        <select id="sort" aria-label="Tri">
+          <option value="copies">Tri : plus de séances</option>
+          <option value="press">Tri : note presse</option>
+          <option value="spect">Tri : note spectateurs</option>
+          <option value="release">Tri : sortie récente</option>
+          <option value="title">Tri : A → Z</option>
+        </select>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="map-box" id="mapBox" hidden><div id="map"></div></section>
+      <section class="list-col">
+        <p class="summary" id="summary"></p>
+        <ol class="list" id="list"></ol>
+        <p class="empty" id="empty" hidden>Aucune séance ne correspond à ces filtres.</p>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <span id="updated"></span>
+      <span>Vos préférences (favoris, position, thème) restent dans ce navigateur. <button id="forget" class="link">Tout effacer</button></span>
+      <span>Données : Allociné · Adresses : BAN · Carte : OpenFreeMap / OpenStreetMap</span>
+    </footer>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

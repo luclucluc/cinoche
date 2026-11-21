@@ -1,0 +1,49 @@
+name: Mise à jour et déploiement
+
+on:
+  schedule:
+    - cron: '30 3 * * *' # chaque nuit vers 4 h 30 / 5 h 30 (heure de Paris)
+  workflow_dispatch: # bouton « Run workflow » dans l'onglet Actions
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Récupération des séances (Allociné) et géocodage
+        run: npm run scrape
+        env:
+          TZ: Europe/Paris
+
+      - uses: actions/configure-pages@v6
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

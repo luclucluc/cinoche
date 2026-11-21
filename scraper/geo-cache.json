@@ -1,0 +1,507 @@
+{
+ "C0159": {
+  "address": "7 Place de la Rotonde 75001 Paris",
+  "lat": 48.861942,
+  "lon": 2.346567
+ },
+ "C0026": {
+  "address": "2, cour Saint-Emilion 75012 Paris",
+  "lat": 48.832351,
+  "lon": 2.385499
+ },
+ "C2954": {
+  "address": "128-162 avenue de France 75013 Paris",
+  "lat": 48.833792,
+  "lon": 2.373992
+ },
+ "C0179": {
+  "address": "140, bd de Clichy et 8, av de Clichy 75018 Paris",
+  "lat": 48.883946,
+  "lon": 2.328047
+ },
+ "C0158": {
+  "address": "3 Rue d'Odessa 75014 Paris",
+  "lat": 48.843049,
+  "lon": 2.324438
+ },
+ "C0003": {
+  "address": "14 quai de la seine 75019 Paris 19e arrondissement",
+  "lat": 48.88508,
+  "lon": 2.371499
+ },
+ "C0116": {
+  "address": "8-16, rue du Colonel-Pierre-Avia 75015 Paris 15e arrondissement",
+  "lat": 48.830515,
+  "lon": 2.276296
+ },
+ "C1621": {
+  "address": "7 quai de Loire 75019 Paris",
+  "lat": 48.883874,
+  "lon": 2.371566
+ },
+ "C0103": {
+  "address": "83, bd du Montparnasse 75006 Paris",
+  "lat": 48.843489,
+  "lon": 2.325715
+ },
+ "C0150": {
+  "address": "66bis, av. des Gobelins 75013 Paris 13e arrondissement",
+  "lat": 48.832886,
+  "lon": 2.354253
+ },
+ "C0192": {
+  "address": "6, rue Belgrand 75020 Paris",
+  "lat": 48.864763,
+  "lon": 2.399562
+ },
+ "C0060": {
+  "address": "32 Rue Louis le Grand 75002 Paris",
+  "lat": 48.870639,
+  "lon": 2.334345
+ },
+ "C0140": {
+  "address": "4, boulevard Beaumarchais 75011 Paris",
+  "lat": 48.854542,
+  "lon": 2.369053
+ },
+ "C0161": {
+  "address": "27, rue Alain-Chartier 75015 Paris",
+  "lat": 48.837788,
+  "lon": 2.296269
+ },
+ "C0065": {
+  "address": "1, bd Poissonniere 75002 Paris",
+  "lat": 48.868486,
+  "lon": 2.347626
+ },
+ "C0037": {
+  "address": "73 avenue du Général Leclerc 75014 Paris 14e arrondissement",
+  "lat": 48.828212,
+  "lon": 2.327482
+ },
+ "C0144": {
+  "address": "133, bd Diderot 75012 Paris",
+  "lat": 48.848222,
+  "lon": 2.393126
+ },
+ "C0050": {
+  "address": "50 Rue Rambuteau 75003 Paris",
+  "lat": 48.861592,
+  "lon": 2.352245
+ },
+ "W7502": {
+  "address": "7 Rue Linois 75015 Paris",
+  "lat": 48.848893,
+  "lon": 2.282589
+ },
+ "C0146": {
+  "address": "12, rue de Lyon 75012 Paris 12e arrondissement",
+  "lat": 48.847495,
+  "lon": 2.371872
+ },
+ "C0104": {
+  "address": "124, bd Saint-Germain 75006 Paris 6ème",
+  "lat": 48.852351,
+  "lon": 2.339873
+ },
+ "C0126": {
+  "address": "32, bd des Italiens 75009 Paris",
+  "lat": 48.871338,
+  "lon": 2.335299
+ },
+ "C0097": {
+  "address": "113, bd Saint-Germain 75006 Paris",
+  "lat": 48.852438,
+  "lon": 2.338267
+ },
+ "C0175": {
+  "address": "2 Pl. de la Prte Maillot, Palais des Congres, les Boutiques du Palais 75017 Paris",
+  "lat": 48.8786,
+  "lon": 2.283804
+ },
+ "C0040": {
+  "address": "5, rue du Faubourg-Saint-Antoine 75011 Paris",
+  "lat": 48.853155,
+  "lon": 2.370724
+ },
+ "C0004": {
+  "address": "7 Av. de Clichy 75017 Paris",
+  "lat": 48.8843,
+  "lon": 2.32689
+ },
+ "C0102": {
+  "address": "99, bd Saint-Germain 75006 Paris 6ème",
+  "lat": 48.852138,
+  "lon": 2.338995
+ },
+ "C0024": {
+  "address": "58 Av. des Gobelins 75013 Paris",
+  "lat": 48.833567,
+  "lon": 2.353781
+ },
+ "C0012": {
+  "address": "101, rue Saint-Lazare 75009 Paris 9e arrondissement",
+  "lat": 48.875613,
+  "lon": 2.327928
+ },
+ "C0139": {
+  "address": "4 boulevard Richard Lenoir 75011 Paris",
+  "lat": 48.853991,
+  "lon": 2.369949
+ },
+ "C0020": {
+  "address": "9, rue Champollion 75005 Paris",
+  "lat": 48.84951,
+  "lon": 2.34279
+ },
+ "C0092": {
+  "address": "7, rue Hautefeuille 75006 Paris",
+  "lat": 48.852188,
+  "lon": 2.342789
+ },
+ "C0073": {
+  "address": "51, rue des Ecoles 75005 Paris",
+  "lat": 48.84998,
+  "lon": 2.343223
+ },
+ "W7509": {
+  "address": "166 Bd Macdonald 75019 Paris",
+  "lat": 48.898999,
+  "lon": 2.376777
+ },
+ "W7510": {
+  "address": "170 boulevard de Magenta 75010 Paris 10e arrondissement",
+  "lat": 48.883472,
+  "lon": 2.349866
+ },
+ "C0025": {
+  "address": "98 Bd du Montparnasse 75014 Paris",
+  "lat": 48.84244,
+  "lon": 2.327646
+ },
+ "C0074": {
+  "address": "3 rue Champollion 75005 Paris",
+  "lat": 48.849801,
+  "lon": 2.342998
+ },
+ "C0089": {
+  "address": "24 Bd Poissonnière 75009 Paris",
+  "lat": 48.871361,
+  "lon": 2.344899
+ },
+ "C0120": {
+  "address": "18, Rue de Passy 75016 Paris",
+  "lat": 48.858244,
+  "lon": 2.282302
+ },
+ "C0052": {
+  "address": "16 Rue d'Odessa 75014 Paris",
+  "lat": 48.842143,
+  "lon": 2.324475
+ },
+ "C0054": {
+  "address": "76 rue de Rennes 75006 Paris",
+  "lat": 48.851279,
+  "lon": 2.330648
+ },
+ "C0072": {
+  "address": "5 Rue des Écoles 75005 Paris",
+  "lat": 48.847538,
+  "lon": 2.352131
+ },
+ "C0009": {
+  "address": "1, rue Balzac 75008 Paris",
+  "lat": 48.87274,
+  "lon": 2.299723
+ },
+ "C0105": {
+  "address": "103, bd du Montparnasse 75006 Paris",
+  "lat": 48.842425,
+  "lon": 2.328938
+ },
+ "C0015": {
+  "address": "4, rue Christine 75006 Paris",
+  "lat": 48.854456,
+  "lon": 2.340147
+ },
+ "C0071": {
+  "address": "23, rue des Ecoles 75005 Paris",
+  "lat": 48.848381,
+  "lon": 2.348992
+ },
+ "C6336": {
+  "address": "129, av. des Champs-Elysées 75008 Paris 8e arrondissement",
+  "lat": 48.872664,
+  "lon": 2.297398
+ },
+ "C0147": {
+  "address": "11 Bd de Port-Royal 75013 Paris",
+  "lat": 48.836817,
+  "lon": 2.349654
+ },
+ "C0099": {
+  "address": "11, rue Jules Chaplain 75006 Paris",
+  "lat": 48.842813,
+  "lon": 2.330526
+ },
+ "C0013": {
+  "address": "20, rue du Temple 75004 Paris",
+  "lat": 48.858697,
+  "lon": 2.353597
+ },
+ "C0095": {
+  "address": "67 , rue Monsieur Le Prince 75006 Paris",
+  "lat": 48.848403,
+  "lon": 2.340782
+ },
+ "W7519": {
+  "address": "Place du Maquis du Vercors 75020 Paris",
+  "lat": 48.877694,
+  "lon": 2.409295
+ },
+ "C0023": {
+  "address": "39, bd de Strasbourg 75010 Paris 10e arrondissement",
+  "lat": 48.871779,
+  "lon": 2.355403
+ },
+ "W7520": {
+  "address": "30 avenue Corentin Cariou 75019 Paris",
+  "lat": 48.89724,
+  "lon": 2.385575
+ },
+ "C0108": {
+  "address": "14 Rue Lincoln 75008 Paris",
+  "lat": 48.870519,
+  "lon": 2.303163
+ },
+ "C0041": {
+  "address": "6, rue de l'Ecole-de-Medecine 75006 Paris",
+  "lat": 48.850765,
+  "lon": 2.341749
+ },
+ "C0061": {
+  "address": "10, rue Tholoze 75018 Paris",
+  "lat": 48.88615,
+  "lon": 2.335348
+ },
+ "C0117": {
+  "address": "7 Pl. Saint-Michel 75005 Paris",
+  "lat": 48.853096,
+  "lon": 2.344233
+ },
+ "W7515": {
+  "address": "6 Rue Péclet 75015 Paris",
+  "lat": 48.843205,
+  "lon": 2.298558
+ },
+ "C0100": {
+  "address": "30 Rue Saint-André des Arts : caisse, salles 1 & 2 - 12 rue Gît-le-Cœur, Salle 3 75006 Paris",
+  "lat": 48.853764,
+  "lon": 2.342692
+ },
+ "P7517": {
+  "address": "86 rue Mstislav Rostropovitch / Au fond de l'allée 75017 Paris",
+  "lat": 48.892006,
+  "lon": 2.310104
+ },
+ "C0093": {
+  "address": "53, rue Notre-Dame-des-Champs 75006 Paris",
+  "lat": 48.844242,
+  "lon": 2.330403
+ },
+ "C0134": {
+  "address": "17 bd de Strasbourg 75010 Paris",
+  "lat": 48.870469,
+  "lon": 2.354667
+ },
+ "C0076": {
+  "address": "13, rue Victor-Cousin 75005 Paris",
+  "lat": 48.847509,
+  "lon": 2.342307
+ },
+ "C0005": {
+  "address": "7-9 Rue Francis de Pressensé 75014 Paris",
+  "lat": 48.833861,
+  "lon": 2.316645
+ },
+ "C0153": {
+  "address": "24, Place Denfert-Rochereau 75014 Paris 14e arrondissement",
+  "lat": 48.833881,
+  "lon": 2.330987
+ },
+ "C0016": {
+  "address": "42, rue Galande 75005 Paris 5e arrondissement",
+  "lat": 48.851614,
+  "lon": 2.347086
+ },
+ "C0172": {
+  "address": "5 Av. Mac-Mahon 75017 Paris",
+  "lat": 48.875536,
+  "lon": 2.294479
+ },
+ "C1559": {
+  "address": "51 rue de Bercy 75012 Paris",
+  "lat": 48.837295,
+  "lon": 2.382614
+ },
+ "C0119": {
+  "address": "Forum des Halles, 2 rue du Cinéma 75001 Paris",
+  "lat": 48.86201,
+  "lon": 2.346713
+ },
+ "C0083": {
+  "address": "10, rue des Ursulines 75005 Paris",
+  "lat": 48.842728,
+  "lon": 2.34206
+ },
+ "C0189": {
+  "address": "26, av. Corentin-Cariou 75019 Paris",
+  "lat": 48.896117,
+  "lon": 2.384348
+ },
+ "G02BG": {
+  "address": "2 Blvd des Capucines 75009 Paris",
+  "lat": 48.871082,
+  "lon": 2.333801
+ },
+ "W7517": {
+  "address": "14 Rue Troyon 75017 Paris",
+  "lat": 48.876107,
+  "lon": 2.295354
+ },
+ "W7504": {
+  "address": "100 Rue Mouffetard 75005 Paris",
+  "lat": 48.8413,
+  "lon": 2.349555
+ },
+ "W7513": {
+  "address": "73 avenue des Gobelins 75013 Paris",
+  "lat": 48.833388,
+  "lon": 2.354535
+ },
+ "W7588": {
+  "address": "1 Pl. de la Concorde 75001 Paris",
+  "lat": 48.865987,
+  "lon": 2.3232
+ },
+ "G0G46": {
+  "address": "126-128 Bd Ney 75018 Paris",
+  "lat": 48.898051,
+  "lon": 2.340308
+ },
+ "B0247": {
+  "address": "26, rue Le Corbusier 92100 Boulogne-Billancourt",
+  "lat": 48.837663,
+  "lon": 2.23954
+ },
+ "B0227": {
+  "address": "28, av. Andre-Morizet 92100 Boulogne-Billancourt",
+  "lat": 48.835944,
+  "lon": 2.239338
+ },
+ "G0GJC": {
+  "address": "2 Île Seguin 92100 Boulogne-Billancourt",
+  "lat": 48.829085,
+  "lon": 2.236074
+ },
+ "W9213": {
+  "address": "8 promenade Cœur de Ville 92130 Issy-les-Moulineaux",
+  "lat": 48.826337,
+  "lon": 2.274519
+ },
+ "B0097": {
+  "address": "11-13 rue Danton/mail Menand Métro Mairie d'Issy conservatoire de musique 92130 Issy-les-Moulineaux",
+  "lat": 48.824981,
+  "lon": 2.269557
+ },
+ "B0095": {
+  "address": "4, rue de Chezy 92200 Neuilly-sur-Seine",
+  "lat": 48.885364,
+  "lon": 2.268222
+ },
+ "W9230": {
+  "address": "Centre commercial So Ouest - 28, rue d'Alsace 92300 Levallois-Perret",
+  "lat": 48.891726,
+  "lon": 2.296363
+ },
+ "B2619": {
+  "address": "Le Dôme - Centre commercial Westfield - Les 4 Temps 92092 Puteaux",
+  "lat": 48.89048,
+  "lon": 2.238012
+ },
+ "W9280": {
+  "address": "136 rue de la République 92800 Puteaux",
+  "lat": 48.884435,
+  "lon": 2.236659
+ },
+ "B0084": {
+  "address": "184, bd. Saint-Denis 92400 Courbevoie",
+  "lat": 48.900696,
+  "lon": 2.271926
+ },
+ "B0161": {
+  "address": "16-18 allee Gambetta 92110 Clichy",
+  "lat": 48.902058,
+  "lon": 2.309393
+ },
+ "B0013": {
+  "address": "88, rue Racine 92120 Montrouge",
+  "lat": 48.813222,
+  "lon": 2.311441
+ },
+ "B0089": {
+  "address": "17 rue Béranger 92240 Malakoff",
+  "lat": 48.820911,
+  "lon": 2.302756
+ },
+ "B0242": {
+  "address": "8, rue du Mondial 98 93210 Saint-Denis",
+  "lat": 48.925457,
+  "lon": 2.363466
+ },
+ "B0122": {
+  "address": "14 passage de l'Aqueduc 93200 Saint-Denis",
+  "lat": 48.936624,
+  "lon": 2.358936
+ },
+ "G0GYS": {
+  "address": "20 Rue Ampère 93200 Saint-Denis",
+  "lat": 48.922192,
+  "lon": 2.338988
+ },
+ "B0101": {
+  "address": "2, rue Edouard-Poisson 93300 Aubervilliers",
+  "lat": 48.910766,
+  "lon": 2.383775
+ },
+ "B0047": {
+  "address": "104, av. Jean-Lolive 93500 Pantin",
+  "lat": 48.892173,
+  "lon": 2.408905
+ },
+ "B0116": {
+  "address": "12, place Jean-Jaurès 93100 Montreuil",
+  "lat": 48.862591,
+  "lon": 2.441657
+ },
+ "B0104": {
+  "address": "6, rue Hoche 93170 Bagnolet",
+  "lat": 48.869237,
+  "lon": 2.417029
+ },
+ "B0148": {
+  "address": "30 avenue de Paris 94300 Vincennes",
+  "lat": 48.845095,
+  "lon": 2.434268
+ },
+ "B0258": {
+  "address": "2, quai Marcel Boyer 94200 Ivry-sur-Seine",
+  "lat": 48.8247,
+  "lon": 2.389108
+ },
+ "B0137": {
+  "address": "77, av. Georges-Gosnat 94200 Ivry-sur-Seine",
+  "lat": 48.81362,
+  "lon": 2.389338
+ }
+}
