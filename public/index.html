@@ -58,35 +58,30 @@
       </div>
       <p class="geo-status" id="geoStatus" hidden></p>
 
-      <div class="filters">
+      <div class="filters" id="filters">
         <div class="seg" id="version" role="group" aria-label="Version">
-          <button data-v="" class="on">Toutes</button>
+          <button data-v="" class="on">VO & VF</button>
           <button data-v="VO">VO</button>
           <button data-v="VF">VF</button>
         </div>
-        <select id="from" aria-label="Horaire">
-          <option value="0">Toute la journée</option>
-          <option value="now">À partir de maintenant</option>
-          <option value="12">Après 12 h</option>
-          <option value="18">Après 18 h</option>
-          <option value="20">Après 20 h</option>
-          <option value="22">Après 22 h</option>
-        </select>
-        <select id="zone" aria-label="Zone"></select>
-        <select id="sort" aria-label="Tri">
-          <option value="copies">Tri : plus de séances</option>
-          <option value="press">Tri : note presse</option>
-          <option value="spect">Tri : note spectateurs</option>
-          <option value="release">Tri : sortie récente</option>
-          <option value="title">Tri : A → Z</option>
-        </select>
+        <button class="chip" data-f="hours"></button>
+        <button class="chip" data-f="zone"></button>
+        <button class="chip" data-f="cinemas"></button>
+        <button class="chip" data-f="cards"></button>
+        <button class="chip" data-f="langs"></button>
+        <button class="chip" data-f="genres"></button>
+        <button class="chip" data-f="formats"></button>
+        <button class="chip" data-f="sort"></button>
+        <button class="link reset" id="reset" hidden>Réinitialiser</button>
       </div>
+      <div class="pop" id="pop" hidden></div>
     </header>
 
     <main id="main">
       <section class="map-box" id="mapBox" hidden><div id="map"></div></section>
       <section class="list-col">
         <p class="summary" id="summary"></p>
+        <div class="list-head" id="listHead"></div>
         <ol class="list" id="list"></ol>
         <p class="empty" id="empty" hidden>Aucune séance ne correspond à ces filtres.</p>
       </section>

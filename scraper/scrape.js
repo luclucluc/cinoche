@@ -9,6 +9,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PARIS_CITY_ID, SUBURBS, DEFAULT_DAYS, CONCURRENCY } from './config.js';
 import { geocodeTheaters } from './geocode.js';
+import { addSensCritique } from './senscritique.js';
+import { addRatings } from './ratings.js';
 
 const BASE = 'https://www.allocine.fr';
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36';
@@ -234,6 +236,12 @@ async function main() {
   const uniq = [...new Map(showtimes.map((s) => [s.join('|'), s])).values()].sort((a, b) => a[2].localeCompare(b[2]));
   for (const id of theaterIds) if (!active.has(id)) delete theaters[id];
   await geocodeTheaters(theaters);
+
+  // Notes des autres sites : en parallèle, et jamais bloquantes pour la mise à jour du programme
+  const safe = (name, p) => p.catch((err) => console.warn(`  ✗ ${name} : ${err.message}`));
+  if (!process.argv.includes('--no-ratings')) {
+    await Promise.all([safe('SensCritique', addSensCritique(movies)), safe('Notes IMDb/Letterboxd/RT/Metacritic', addRatings(movies))]);
+  }
 
   // Garde-fou : si Allociné nous a bloqués, on n'écrase pas les données existantes
   // (en CI, l'échec empêche le déploiement et le site garde la version précédente).

@@ -19,7 +19,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v7
 
@@ -27,7 +27,14 @@ jobs:
         with:
           node-version: 24
 
-      - name: Récupération des séances (Allociné) et géocodage
+      # Cache des correspondances et des notes (SensCritique, IMDb, Letterboxd…) d'une nuit à l'autre
+      - uses: actions/cache@v6
+        with:
+          path: .cache
+          key: notes-${{ github.run_id }}
+          restore-keys: notes-
+
+      - name: Récupération des séances, géocodage et notes
         run: npm run scrape
         env:
           TZ: Europe/Paris

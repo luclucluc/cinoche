@@ -20,8 +20,9 @@ Aucune dépendance npm : il faut seulement Node ≥ 20.
 - **Vues** : par film (avec toutes les séances par cinéma), par cinéma, ou **carte**.
 - **Carte** : séances dans un rayon de 500 m à 10 km autour d'un point. Le point peut être votre position (géolocalisation du navigateur), une adresse (avec autocomplétion) ou un clic sur la carte. Le marqueur se déplace par glisser-déposer. Les cinémas sont triés par distance. Une fois le point défini, l'option « À moins de X de… » apparaît aussi dans le filtre de zone des autres vues.
 - **Onglets** : tous les films, nouveautés (sorties depuis moins de 5 semaines), classiques (plus de 2 ans) et rétrospectives (réalisateurs ayant au moins 2 classiques à l'affiche).
-- **Filtres** : jour, VO / VF, horaire (dès maintenant, après 18 h…), zone (arrondissement, ville de banlieue, un cinéma précis, ou « Mes cinémas »).
-- **Tri** : nombre de cinémas, note presse, note spectateurs, date de sortie, ordre alphabétique.
+- **Filtres** (comme paris-cine.info) : jour ou semaine entière, heures, VO/VF, lieu (arrondissement, ville, rayon autour d'un point), cinémas (choix multiple), cartes illimitées, langue originale, genres, format (IMAX, 4DX, Dolby…). Les filtres peuvent se combiner.
+- **Notes** en colonnes : IMDb, Allociné presse et spectateurs, SensCritique, Letterboxd, Metacritic, Rotten Tomatoes. Un clic sur l'en-tête d'une colonne trie par cette note.
+- **Tri** : nombre de cinémas, chacune des notes, date de sortie, année, titre.
 - **Recherche** sur le titre, le titre original, le réalisateur, les acteurs et le cinéma (touche `/`).
 - L'URL est partageable (`#d=…&tab=…&view=…&q=…`). Elle ne contient jamais la position.
 
@@ -44,12 +45,22 @@ Le scraper ([scraper/scrape.js](scraper/scrape.js)) interroge Allociné :
 | Liste des cinémas d'une ville | `/salle/cinema/ville-{id}/?page=N` (HTML) |
 | Séances d'un cinéma pour un jour | `/_/showtimes/theater-{id}/d-{YYYY-MM-DD}/p-{N}/` (JSON) |
 | Coordonnées GPS des cinémas | Géoplateforme IGN `data.geopf.fr/geocodage/search/csv`, en une requête groupée, avec un cache dans `scraper/geo-cache.json` |
+| Note SensCritique | Wikidata (Allociné → SensCritique), sinon sitemap SensCritique + vérification sur la page du film (année, réalisateur) |
+| Note IMDb | Jeux de données officiels IMDb (`title.ratings`, `title.basics`) ; identifiant via Wikidata ou titre + année + durée |
+| Note Letterboxd | Redirection `letterboxd.com/imdb/<id>/` puis métadonnées de la page |
+| Rotten Tomatoes / Metacritic | Wikidata, sinon adresse déduite du titre original et vérifiée (année, réalisateur) |
+
+Les correspondances et les notes sont mises en cache dans `.cache/` (conservé d'une nuit à l'autre par GitHub Actions). Les notes sont rafraîchies tous les 2 jours pour les films récents, tous les 10 jours pour les autres.
+Seules des pages autorisées par les `robots.txt` des sites sont consultées, à raison d'une requête par seconde et par site.
+Pour récupérer les notes seules sur un `programme.json` existant : `npm run notes`.
 
 Les villes couvertes se règlent dans [scraper/config.js](scraper/config.js).
 Le scraper est volontairement lent (2 requêtes en parallèle, au moins 400 ms entre deux requêtes), et il se met en pause s'il reçoit une réponse 429. Un scraping complet sur 7 jours envoie environ 1 500 requêtes et dure une dizaine de minutes.
 
 Format de `programme.json` : `{ generatedAt, dates, theaters, movies, showtimes }`. Les cinémas portent leurs coordonnées `lat` et `lon`.
 Pour géocoder seul un `programme.json` existant : `node scraper/geocode.js`.
+
+Les cartes illimitées (UGC Illimité, CinéPass Pathé, cartes 5 places UGC et MK2) sont déduites de l'enseigne du cinéma, dans [public/cards.js](public/cards.js). On peut y ajouter des salles partenaires.
 Chaque séance est un tableau compact : `[movieId, theaterId, "YYYY-MM-DDTHH:MM", "VO"|"VF", format]`.
 
 Ces données appartiennent à Allociné et aux cinémas. Ce projet est destiné à un usage personnel. Avant toute mise en ligne publique, vérifiez les conditions d'utilisation d'Allociné.
