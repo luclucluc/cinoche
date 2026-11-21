@@ -678,7 +678,7 @@ function render() {
   // En-tête des colonnes (vue Films)
   $('#listHead').hidden = !films || !shows.length;
   $('#listHead').innerHTML = films
-    ? `<span></span><span>Film</span><span>Réalisation</span><span class="cells">${visibleRatings().map((r) => `<button class="cell${state.sort === r.key ? ' on' : ''}" data-sort="${r.key}" title="Trier par ${esc(r.title)}">${esc(r.short || r.label)}</button>`).join('')}</span>`
+    ? `<span></span><span>Film</span><span>Réalisation</span><span>Année</span><span class="cells">${visibleRatings().map((r) => `<button class="cell${state.sort === r.key ? ' on' : ''}" data-sort="${r.key}" title="Trier par ${esc(r.title)}">${esc(r.short || r.label)}</button>`).join('')}</span>`
     : '';
   $('#listHead').onclick = (e) => {
     const b = e.target.closest('[data-sort]');
@@ -790,10 +790,11 @@ function movieRow(key, m, shows = []) {
   const open = state.open.has(key) ? ' open' : '';
   const orig = m.originalTitle ? `<small>${esc(m.originalTitle)}</small>` : '';
   return `<li class="item${open}" data-key="${key}">
-    <div class="row" role="button" tabindex="0">
+    <div class="row film-row" role="button" tabindex="0">
       <span class="poster" style="background-image:url('${POSTER(m.poster)}')"></span>
       <span class="title with-fav">${ap ? '<span class="ap" title="Avant-première">Avant<br>première</span>' : ''}<span${!ap && isNew(m) ? ' class="is-new" title="Nouveauté"' : ''}>${esc(m.title)}${orig}</span>${bookmark(m)}</span>
       <span class="who"><span>${esc(m.directors.slice(0, 2).join(', ') || '—')}</span><span class="year">${esc(m.year || '')}</span></span>
+      <span class="year-col">${esc(m.year || '')}</span>
       ${ratingCells(m)}
     </div>
     <div class="detail"></div>
