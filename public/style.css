@@ -56,7 +56,7 @@ a { color: inherit; }
   /* Trois tailles de texte seulement */
   --fs-title: 20px; --fs-text: 13px; --fs-small: 11px;
 }
-:root { --side: 260px; --gutter: 16px; }
+:root { --side: 20%; --gutter: 16px; } /* grille de 10 colonnes : la colonne de filtres en occupe 2 */
 .search {
   /* coin haut gauche : largeur de la colonne de filtres, hauteur de la bande des jours */
   flex: none; width: var(--side); box-sizing: border-box; display: flex; align-items: center; gap: 10px; margin: 0;
@@ -85,7 +85,8 @@ a { color: inherit; }
 /* Bande des jours : toute la largeur, bord à bord ; c'est elle qui sépare l'en-tête du contenu */
 .days { flex: 1; min-width: 0; display: flex; gap: 0; overflow-x: auto; scrollbar-width: none; }
 .days button {
-  flex: 1 1 0; min-width: max-content; border: 1px solid var(--line); background: var(--surface); padding: 6px 12px;
+  /* chaque jour = 1 colonne sur 10 (la bande en occupe 8) */
+  flex: 0 0 12.5%; min-width: 0; overflow: hidden; text-overflow: ellipsis; border: 1px solid var(--line); background: var(--surface); padding: 6px 12px;
   font-size: var(--fs-text); white-space: nowrap;
 }
 .days button:hover { background: var(--hover); }
@@ -95,7 +96,7 @@ a { color: inherit; }
 
 /* ---------- Filtres ---------- */
 /* Colonne de filtres */
-.layout { display: grid; grid-template-columns: var(--side) minmax(0, 1fr); align-items: start; }
+.layout { display: grid; grid-template-columns: var(--side) minmax(0, 1fr); align-items: start; container-type: inline-size; } /* 1cqw = 1 % de la page */
 .sidebar {
   position: sticky; top: var(--header-h, 0px); height: calc(100vh - var(--header-h, 0px)); overflow: hidden;
   display: flex; flex-direction: column;
@@ -159,6 +160,9 @@ a { color: inherit; }
 }
 .chip::after { content: '▾'; position: absolute; right: 8px; top: 50%; transform: translateY(-52%); font-size: 10px; color: var(--muted); }
 .chip:hover, .chip.open { background: var(--hover); }
+.chip:disabled { color: var(--muted); cursor: default; }
+.chip:disabled:hover { background: var(--surface); }
+.chip:disabled::after { opacity: .4; }
 .chip.active { background: var(--active); color: var(--ink); font-weight: 600; }
 .chip.active::after { color: inherit; }
 .seg { display: inline-flex; }
@@ -208,8 +212,7 @@ a { color: inherit; }
 
 /* ---------- Clap (récapitulatif) ---------- */
 main { padding: 0 var(--pad) 0 var(--gutter); min-width: 0; }
-/* Résultats : au moins un écran de haut, pour que le pied de page commence à 100vh minimum */
-#results { min-height: calc(100vh - var(--header-h, 0px) - var(--bar-h, 0px)); padding-bottom: 48px; }
+#results { padding-bottom: 48px; }
 /* Barre du bouton Filtres : mobile uniquement */
 .results-bar { position: sticky; top: var(--header-h, 0px); z-index: 3; background: var(--bg); display: flex; align-items: center; gap: 8px; padding: 12px 0; flex-wrap: wrap; }
 .filters-toggle { display: none; }
@@ -224,8 +227,15 @@ main { padding: 0 var(--pad) 0 var(--gutter); min-width: 0; }
 
 .row, .list-head { display: grid; grid-template-columns: var(--poster) minmax(0, 1.6fr) minmax(150px, 1fr) auto; gap: 20px; align-items: center; }
 /* Films : colonne Année après la réalisation */
-.row.film-row, .list-head { grid-template-columns: var(--poster) minmax(0, 1.6fr) minmax(150px, 1fr) 48px auto; }
-.year-col { font-size: var(--fs-text); font-variant-numeric: tabular-nums; }
+/* « Réalisation » commence à la 6e colonne de la grille de 10 (50 % de la page) :
+   20 % de colonne de filtres + marge + retrait de ligne + affiche + 2 espaces de 20px + titre = 50 % */
+/* L'année finit avec la 8e colonne (80 %) ; les notes occupent les colonnes 9 et 10 */
+.row.film-row, .list-head {
+  grid-template-columns: var(--poster) calc(30cqw - var(--gutter) - 8px - var(--poster) - 40px) minmax(0, 1fr) 48px calc(20cqw - 20px - var(--pad) - 8px);
+}
+.film-row .cells, .list-head .cells { grid-template-columns: repeat(var(--ncells, 7), minmax(0, 1fr)); }
+.year-col { font-size: var(--fs-text); font-variant-numeric: tabular-nums; text-align: right; }
+.year-head { text-align: right; }
 .film-row .who .year { display: none; }
 .list-head {
   position: sticky; top: calc(var(--header-h, 0px) + var(--bar-h, 0px)); z-index: 2; background: var(--bg);
@@ -290,7 +300,11 @@ main { padding: 0 var(--pad) 0 var(--gutter); min-width: 0; }
 .credits a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--faint); }
 .credits a:hover { text-decoration-color: var(--ink); }
 .links { font-size: var(--fs-small); }
-.links.count { color: var(--muted); }
+/* Liens externes de la fiche : pastilles grises côte à côte */
+.film-side .link-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.film-side .link-pills li + li { margin-top: 0; }
+.link-pills a { display: inline-block; padding: 3px 8px; border-radius: 4px; background: var(--hair); color: var(--ink); text-decoration: none; }
+.link-pills a:hover { background: var(--faint); }
 .synopsis { font: var(--fs-text)/1.55 var(--sans); color: var(--muted); margin: 0 0 12px; max-width: 80ch; }
 .place { display: grid; grid-template-columns: minmax(180px, 260px) 1fr; gap: 12px; padding: 9px 0; border-top: 1px solid var(--hair); }
 .place-name { font: 500 var(--fs-text) var(--sans); }
@@ -305,7 +319,7 @@ a.time:hover { background: var(--hover); color: var(--ink); }
 
 .empty { text-align: center; color: var(--muted); padding: 70px 0; font-size: var(--fs-text); }
 .empty::before { content: '+'; display: block; font-size: 48px; font-weight: 200; color: var(--ink); margin-bottom: 10px; }
-.foot { margin: 0 calc(-1 * var(--pad)) 0 calc(-1 * var(--gutter)); padding: 12px var(--pad) 14px var(--gutter); color: var(--muted); font-size: var(--fs-small); border-top: 1px solid var(--line); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prefs-foot { padding: 16px 20px 24px; color: var(--muted); font-size: var(--fs-small); line-height: 1.6; }
 
 /* ---------- Position & carte ---------- */
 .geo { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; padding-top: 10px; }
@@ -327,13 +341,15 @@ select { appearance: none; border: 1px solid var(--line); background: var(--surf
 /* Vue carte : la carte va jusqu'aux bords (colonne de filtres, en-tête, bas de l'écran) */
 #results.map-mode {
   display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 0; align-items: start;
-  margin: 0 calc(-1 * var(--pad)) 0 calc(-1 * var(--gutter)); padding-bottom: 0; border-top: 1px solid var(--line);
+  margin: 0 calc(-1 * var(--pad)) 0 calc(-1 * var(--gutter)); padding-bottom: 0;
 }
 /* Colonne à côté de la carte : bord à bord, retrait seulement à l'intérieur des fiches */
 #results.map-mode .list-col { padding: 0 0 48px; min-width: 0; }
 #results.map-mode .list .item { margin: 0; padding: 0; }
 #results.map-mode .row { padding: 12px 16px; }
 #results.map-mode .group-title { margin: 0; padding: 18px 16px 6px; }
+#results.map-mode .group-title:first-child { padding-top: 8px; } /* premier cinéma collé en haut */
+#results.map-mode .cine-item .row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 #results.map-mode .row { grid-template-columns: var(--poster) minmax(0, 1fr) minmax(0, 1fr) auto; }
 #results.map-mode .row.film-row, #results.map-mode .list-head { grid-template-columns: var(--poster) minmax(0, 1fr) minmax(0, 1fr) 48px auto; }
 #results.map-mode .list-head { margin: 0; padding: 0 16px; }
@@ -370,11 +386,15 @@ path.radius { stroke: var(--ink); stroke-opacity: 1; stroke-width: 1.2; stroke-d
 
 /* ---------- Préférences ---------- */
 body.no-scroll { overflow: hidden; }
-.prefs-overlay { position: fixed; inset: 0; z-index: 60; background: color-mix(in srgb, var(--ink) 35%, transparent); }
+.prefs-overlay { position: fixed; inset: 0; z-index: 60; background: rgba(0, 0, 0, .55); opacity: 0; transition: opacity .32s ease; }
+.prefs-overlay.open { opacity: 1; }
 .prefs {
   position: fixed; z-index: 61; top: 0; right: 0; bottom: 0; width: min(440px, 100vw); overflow-y: auto;
-  background: var(--bg); border-left: 1px solid var(--line); box-shadow: -8px 0 0 var(--ink);
+  background: var(--bg); border-left: 1px solid var(--line);
+  transform: translateX(100%); transition: transform .32s cubic-bezier(.2, .8, .2, 1);
 }
+.prefs.open { transform: none; }
+@media (prefers-reduced-motion: reduce) { .prefs, .prefs-overlay { transition: none; } }
 .prefs-head { position: sticky; top: 0; z-index: 1; display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: var(--fs-text); }
 .prefs-head .icon-btn { margin: 0; width: 32px; height: 32px; font-size: var(--fs-text); }
 .prefs section { padding: 18px 20px; border-bottom: 1px solid var(--hair); }
@@ -431,7 +451,7 @@ body.no-scroll { overflow: hidden; }
   #results.map-mode .list-col { padding-left: 0; }
   .pop:not(.inline) { left: 12px !important; right: 12px; width: auto; }
   .tabs { order: 3; width: 100%; height: 38px; border-top: 1px solid var(--hair); margin: 0 calc(-1 * var(--pad)); padding: 0 var(--pad); width: calc(100% + 2 * var(--pad)); }
-  .days button { flex: 0 0 auto; }
+  .days button { flex: 0 0 auto; min-width: max-content; }
   .top { flex-wrap: wrap; }
   .search { width: 100%; height: 40px; border-right: 0; border-top: 0; }
   .days { flex-basis: 100%; }
@@ -439,7 +459,6 @@ body.no-scroll { overflow: hidden; }
   main { padding-left: var(--pad); }
   .list-head { margin-left: calc(-1 * var(--pad)); }
   .list .item { margin-left: calc(-1 * var(--pad)); padding-left: var(--pad); }
-  .foot { margin-left: calc(-1 * var(--pad)); padding-left: var(--pad); }
   .filters-toggle { display: inline-block; height: 30px; }
   .sidebar {
     display: none; position: fixed; z-index: 55; top: 0; left: 0; bottom: 0; width: min(340px, 92vw); max-height: none; overflow-y: auto;

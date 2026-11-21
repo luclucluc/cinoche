@@ -662,7 +662,11 @@ function render() {
   updateFavBtn();
   $('#empty').textContent = state.onlyFavs && !state.favMovies.size ? 'Aucun favori pour l’instant : cliquez sur le signet d’un film pour l’ajouter.' : 'Aucune séance ne correspond à ces filtres.';
   $('#mapBox').hidden = !isMap;
-  document.querySelector('.chip[data-f="sort"]').hidden = isMap; // le tri concerne la liste des films
+  // le tri concerne la liste des films : grisé et inactif en vue carte
+  const sortChip = document.querySelector('.chip[data-f="sort"]');
+  sortChip.disabled = isMap;
+  sortChip.title = isMap ? 'Le tri s’applique à la liste' : '';
+  if (isMap && popKey === 'sort') closePop();
   $('#results').classList.toggle('map-mode', isMap);
   document.documentElement.style.setProperty('--ncells', visibleRatings().length);
   setStatus(''); // rien au-dessus de la carte
@@ -679,7 +683,7 @@ function render() {
   // En-tête des colonnes (vue Films)
   $('#listHead').hidden = !films || !shows.length;
   $('#listHead').innerHTML = films
-    ? `<span></span><span>Film</span><span>Réalisation</span><span>Année</span><span class="cells">${visibleRatings().map((r) => `<button class="cell${state.sort === r.key ? ' on' : ''}" data-sort="${r.key}" title="Trier par ${esc(r.title)}">${esc(r.short || r.label)}</button>`).join('')}</span>`
+    ? `<span></span><span>Film</span><span>Réalisation</span><span class="year-head">Année</span><span class="cells">${visibleRatings().map((r) => `<button class="cell${state.sort === r.key ? ' on' : ''}" data-sort="${r.key}" title="Trier par ${esc(r.title)}">${esc(r.short || r.label)}</button>`).join('')}</span>`
     : '';
   $('#listHead').onclick = (e) => {
     const b = e.target.closest('[data-sort]');
@@ -805,15 +809,11 @@ function movieRow(key, m, shows = []) {
 function theaterRow(key, t, shows) {
   const open = state.open.has(key) ? ' open' : '';
   const nFilms = new Set(shows.map((s) => s[0])).size;
-  const initials = t.name.replace(/^(le|la|les|l')\s*/i, '').slice(0, 2).toUpperCase();
-  const fav = state.favs.has(t.id);
   const sel = state.selected === t.id ? ' sel' : '';
   return `<li class="item cine-item${open}${sel}" data-key="${key}" id="${key}">
     <div class="row" role="button" tabindex="0">
-      <span class="poster cine">${esc(initials)}</span>
       <span class="title">${esc(t.name)}</span>
       <span class="who"><span>${dist(t) != null ? `<b class="dist">${fmtDistance(dist(t))}</b> · ` : ''}${esc(t.address)}</span><span class="year">${nFilms} film${nFilms > 1 ? 's' : ''}</span></span>
-      <span class="side"><button class="fav ${fav ? 'on' : ''}" data-id="${t.id}" title="${fav ? 'Retirer de' : 'Ajouter à'} mes cinémas">${fav ? '★' : '☆'}</button></span>
     </div>
     <div class="detail"></div>
   </li>`;
@@ -862,15 +862,13 @@ function fillDetail(li) {
       `<a href="${FILM_URL(m.allocineId)}" target="_blank" rel="noopener">Allociné</a>`,
       ...visibleRatings().filter((r) => !['press', 'spect'].includes(r.key) && r.url(m)).map((r) => `<a href="${esc(r.url(m))}" target="_blank" rel="noopener">${esc(r.label)}</a>`),
     ];
-    const nT = byT.size, nS = it.shows.length;
     box.innerHTML =
       `<div class="film-head"><div class="film-main">` +
       (m.cast.length ? `<p class="credits">Avec ${m.cast.map(esc).join(', ')}</p>` : '') +
       (m.synopsis ? `<p class="synopsis">${esc(m.synopsis)}</p>` : '') +
       `</div><aside class="film-side">` +
       (facts.length ? `<ul class="facts">${facts.map((f) => `<li>${f}</li>`).join('')}</ul>` : '') +
-      `<ul class="credits links">${links.map((l) => `<li>${l}</li>`).join('')}</ul>` +
-      `<p class="credits links count">${nS} séance${nS > 1 ? 's' : ''} · ${nT} cinéma${nT > 1 ? 's' : ''}</p>` +
+      `<ul class="credits links link-pills">${links.map((l) => `<li>${l}</li>`).join('')}</ul>` +
       `</aside></div>` +
       places
         .map(({ t, ss }) => `<div class="place"><div class="place-name">${state.favs.has(t.id) ? '★ ' : ''}${esc(t.name)}<small>${esc(t.area)}${dist(t) != null ? ` · ${fmtDistance(dist(t))}` : ''}</small></div>${timeChips(ss, t.id)}</div>`)
@@ -962,13 +960,11 @@ async function shareSeen(id, btn) {
 function openSeen() {
   closePop();
   renderSeen();
-  $('#seenPanel').hidden = $('#seenOverlay').hidden = false;
-  document.body.classList.add('no-scroll');
-  $('#seenClose').focus();
+  showPanel($('#seenPanel'), $('#seenOverlay'));
+  $('#seenClose').focus({ preventScroll: true });
 }
 function closeSeen() {
-  $('#seenPanel').hidden = $('#seenOverlay').hidden = true;
-  document.body.classList.remove('no-scroll');
+  hidePanel($('#seenPanel'), $('#seenOverlay'));
   render(); // les coches de la liste suivent les retraits
 }
 
@@ -1139,16 +1135,31 @@ function selectTheater(id) {
 const PREFS_APP = 'paris-cine';
 const CODE_PREFIX = 'PC1:';
 
+// Volets latéraux (Compte, Films vus) : glissent depuis la droite, voile en fondu
+const PANEL_MS = 320;
+function showPanel(panel, overlay) {
+  clearTimeout(panel._hideTimer);
+  panel.hidden = overlay.hidden = false;
+  panel.getBoundingClientRect(); // départ de l'animation
+  panel.classList.add('open');
+  overlay.classList.add('open');
+  document.body.classList.add('no-scroll');
+}
+function hidePanel(panel, overlay) {
+  panel.classList.remove('open');
+  overlay.classList.remove('open');
+  document.body.classList.remove('no-scroll');
+  panel._hideTimer = setTimeout(() => { panel.hidden = overlay.hidden = true; }, PANEL_MS);
+}
+
 function openPrefs() {
   closePop();
   renderPrefs();
-  $('#prefs').hidden = $('#prefsOverlay').hidden = false;
-  document.body.classList.add('no-scroll');
-  $('#prefsClose').focus();
+  showPanel($('#prefs'), $('#prefsOverlay'));
+  $('#prefsClose').focus({ preventScroll: true });
 }
 function closePrefs() {
-  $('#prefs').hidden = $('#prefsOverlay').hidden = true;
-  document.body.classList.remove('no-scroll');
+  hidePanel($('#prefs'), $('#prefsOverlay'));
 }
 
 // Tous les noms (réalisateurs et acteurs) du programme, les plus fréquents d'abord

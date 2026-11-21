@@ -69,10 +69,6 @@
             <p class="empty" id="empty" hidden>Aucune séance ne correspond à ces filtres.</p>
           </section>
         </div>
-        <!-- Pied de page : sous la liste, jamais sous la colonne de filtres, au moins à 100vh du haut -->
-        <footer class="foot">
-          <span id="updated"></span> · Données : Allociné · Adresses : BAN · Carte : OpenFreeMap / OpenStreetMap
-        </footer>
       </main>
     </div>
 
@@ -145,6 +141,12 @@
         <p class="hint">Vos préférences (favoris, position, thème, notes, masquages…) restent dans ce navigateur : rien n’est envoyé à un serveur.</p>
         <div class="btns"><button class="btn" id="forget">Tout effacer</button></div>
       </section>
+
+      <!-- Informations (ancien pied de page) -->
+      <footer class="prefs-foot">
+        <span id="updated"></span><br />
+        Données : Allociné · Adresses : BAN · Carte : OpenFreeMap / OpenStreetMap
+      </footer>
     </aside>
 
     <script type="module" src="app.js"></script>
