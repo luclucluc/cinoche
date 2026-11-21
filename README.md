@@ -54,13 +54,14 @@ Les correspondances et les notes sont mises en cache dans `.cache/` (conservé d
 Seules des pages autorisées par les `robots.txt` des sites sont consultées, à raison d'une requête par seconde et par site.
 Pour récupérer les notes seules sur un `programme.json` existant : `npm run notes`.
 
-Les villes couvertes se règlent dans [scraper/config.js](scraper/config.js).
-Le scraper est volontairement lent (2 requêtes en parallèle, au moins 400 ms entre deux requêtes), et il se met en pause s'il reçoit une réponse 429. Un scraping complet sur 7 jours envoie environ 1 500 requêtes et dure une dizaine de minutes.
+Zones couvertes ([scraper/config.js](scraper/config.js)) : Paris et **toutes les communes des Hauts-de-Seine, de Seine-Saint-Denis et du Val-de-Marne**. La liste officielle des communes vient de geo.api.gouv.fr. Chaque commune est associée à sa ville Allociné ; cette correspondance est mise en cache, et la liste des cinémas de chaque ville est rafraîchie chaque semaine. On peut ajouter d'autres départements ou des villes isolées (`EXTRA_CITIES`).
+Pour tester uniquement la découverte des cinémas : `node scraper/scrape.js --zones-only`.
+Le scraper est volontairement lent (2 requêtes en parallèle, au moins 400 ms entre deux requêtes), et il se met en pause s'il reçoit une réponse 429. Un scraping complet sur 7 jours envoie environ 1 600 requêtes à Allociné et dure 30 à 40 minutes, car Allociné limite le débit.
 
 Format de `programme.json` : `{ generatedAt, dates, theaters, movies, showtimes }`. Les cinémas portent leurs coordonnées `lat` et `lon`.
 Pour géocoder seul un `programme.json` existant : `node scraper/geocode.js`.
 
-Les cartes illimitées (UGC Illimité, CinéPass Pathé, cartes 5 places UGC et MK2) sont déduites de l'enseigne du cinéma, dans [public/cards.js](public/cards.js). On peut y ajouter des salles partenaires.
+Cartes ([public/cards.js](public/cards.js)) : UGC Illimité (UGC et MK2), CinéPass Pathé et cartes 5 places UGC et MK2 sont déduits de l'enseigne. La carte CIP repose sur la liste officielle des 32 salles adhérentes. On peut y ajouter des salles partenaires.
 Chaque séance est un tableau compact : `[movieId, theaterId, "YYYY-MM-DDTHH:MM", "VO"|"VF", format]`.
 
 Ces données appartiennent à Allociné et aux cinémas. Ce projet est destiné à un usage personnel. Avant toute mise en ligne publique, vérifiez les conditions d'utilisation d'Allociné.

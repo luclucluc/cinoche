@@ -43,6 +43,8 @@ const FORMAT_RE = /Dolby Cinema|IMAX|4DX|ScreenX|Atmos|3D|70mm|35mm/g;
 const FORMAT_LABEL = { Atmos: 'Dolby Atmos' };
 const formatsOf = (s) => (s[4] ? s[4].match(FORMAT_RE) || [] : []);
 
+const DEPTS = { 92: 'Hauts-de-Seine', 93: 'Seine-Saint-Denis', 94: 'Val-de-Marne' };
+
 const HOURS = [
   ['0', 'Toutes'],
   ['now', 'À partir de maintenant'],
@@ -111,6 +113,7 @@ async function init() {
   for (const [id, t] of Object.entries(P.theaters)) {
     t.id = id;
     t._q = fold(t.name + ' ' + t.area);
+    t.dept ??= t.address.match(/\b(75|9[1-5])\d{3}\b/)?.[1] || (t.area.startsWith('Paris ') ? '75' : null);
   }
   const today = parisNow().date;
   state.date = P.dates.includes(today) ? today : P.dates[0];
@@ -162,28 +165,31 @@ const FILTERS = {
     options: () => {
       const areas = [...new Set(Object.values(P.theaters).map((t) => t.area))];
       const arr = areas.filter((a) => a.startsWith('Paris ')).sort((a, b) => parseInt(a.slice(6)) - parseInt(b.slice(6)));
-      const sub = areas.filter((a) => !a.startsWith('Paris ')).sort((a, b) => a.localeCompare(b, 'fr'));
-      return [
-        ['', 'Paris & proche banlieue'],
+      const out = [
+        ['', 'Paris & petite couronne'],
         ['@paris', 'Paris intra-muros'],
-        ['@banlieue', 'Proche banlieue'],
+        ['@banlieue', 'Petite couronne (92, 93, 94)'],
         ...(state.geo ? [['@near', `À moins de ${fmtDistance(state.radius)} de ${state.geo.label}`]] : []),
         { group: 'Arrondissements' },
         ...arr.map((a) => [a, a]),
-        { group: 'Banlieue' },
-        ...sub.map((a) => [a, a]),
       ];
+      for (const [d, name] of Object.entries(DEPTS)) {
+        const cities = [...new Set(Object.values(P.theaters).filter((t) => t.dept === d).map((t) => t.area))].sort((a, b) => a.localeCompare(b, 'fr'));
+        if (!cities.length) continue;
+        out.push({ group: `${name} (${d})` }, ['@' + d, `Tout le ${name}`], ...cities.map((c) => [c, c]));
+      }
+      return out;
     },
     value: () => state.zone,
     set: (v) => { state.zone = v; store.set('zone', v); },
     def: '',
-    short: (v) => ({ '': 'Paris & banlieue', '@paris': 'Paris', '@banlieue': 'Banlieue', '@near': `${fmtDistance(state.radius)} autour` })[v] ?? v,
+    short: (v) => ({ '': 'Paris & petite couronne', '@paris': 'Paris', '@banlieue': 'Petite couronne', '@near': `${fmtDistance(state.radius)} autour` })[v] ?? (DEPTS[v.slice(1)] || v),
   },
   cinemas: {
     label: 'Cinémas',
     search: true,
     options: () => {
-      const all = Object.values(P.theaters).sort((a, b) => areaRank(a.area) - areaRank(b.area) || a.name.localeCompare(b.name, 'fr'));
+      const all = Object.values(P.theaters).sort(byPlace);
       const favs = all.filter((t) => state.favs.has(t.id));
       const out = [];
       if (favs.length) out.push({ group: '★ Mes favoris', action: 'favs' }, ...favs.map((t) => [t.id, t.name, t.area]));
@@ -202,7 +208,7 @@ const FILTERS = {
     options: () => CARDS.map((c) => [c.id, c.label]),
     set: () => store.set('cards', [...state.cards]),
     none: 'Aucune',
-    note: 'Cinémas acceptant la carte, déduits de l’enseigne (UGC Illimité : UGC et MK2).',
+    note: 'UGC Illimité : salles UGC et MK2 ; CinéPass : Pathé ; CIP : les 32 salles adhérentes.',
   },
   langs: { label: 'Langues', options: () => OPTIONS.langs.map((l) => [l, langLabel(l)]), none: 'Toutes', note: 'Langue originale du film.' },
   genres: { label: 'Genres', options: () => OPTIONS.genres.map((g) => [g, g]) },
@@ -421,7 +427,8 @@ function inZone(t) {
   }
   if (!z) return true;
   if (z === '@paris') return t.area.startsWith('Paris ');
-  if (z === '@banlieue') return !t.area.startsWith('Paris ');
+  if (z === '@banlieue') return t.dept !== '75';
+  if (/^@9\d$/.test(z)) return t.dept === z.slice(1);
   return t.area === z;
 }
 
@@ -581,7 +588,7 @@ function groupByTheater(shows) {
     list.sort((a, b) => dist(a.t) - dist(b.t));
     return list.map((x) => ({ key: 't' + x.t.id, t: x.t, shows: x.shows, html: theaterRow('t' + x.t.id, x.t, x.shows) }));
   }
-  list.sort((a, b) => state.favs.has(b.t.id) - state.favs.has(a.t.id) || areaRank(a.t.area) - areaRank(b.t.area) || a.t.name.localeCompare(b.t.name, 'fr'));
+  list.sort((a, b) => state.favs.has(b.t.id) - state.favs.has(a.t.id) || byPlace(a.t, b.t));
 
   const out = [];
   let lastGroup = null;
@@ -594,6 +601,9 @@ function groupByTheater(shows) {
   return out;
 }
 const areaRank = (a) => (a.startsWith('Paris ') ? parseInt(a.slice(6)) : 100);
+// Ordre des cinémas : arrondissements, puis département, ville et nom
+const byPlace = (a, b) =>
+  areaRank(a.area) - areaRank(b.area) || String(a.dept).localeCompare(String(b.dept)) || a.area.localeCompare(b.area, 'fr') || a.name.localeCompare(b.name, 'fr');
 
 function ratingCells(m) {
   return `<span class="cells">${RATINGS.map((r) => {
@@ -663,8 +673,7 @@ function fillDetail(li) {
       .sort((a, b) =>
         state.favs.has(b.t.id) - state.favs.has(a.t.id) ||
         (state.geo ? (dist(a.t) ?? 1e9) - (dist(b.t) ?? 1e9) : 0) ||
-        areaRank(a.t.area) - areaRank(b.t.area) ||
-        a.t.name.localeCompare(b.t.name, 'fr')
+        byPlace(a.t, b.t)
       );
     const facts = [
       m.runtime,

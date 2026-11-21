@@ -4,17 +4,19 @@
 //
 // Usage : node scraper/scrape.js [--days 7] [--paris-only]
 
-import { writeFile, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { PARIS_CITY_ID, SUBURBS, DEFAULT_DAYS, CONCURRENCY } from './config.js';
+import { PARIS_CITY_ID, DEPARTMENTS, EXTRA_CITIES, DEFAULT_DAYS, CONCURRENCY, THEATERS_TTL_DAYS } from './config.js';
 import { geocodeTheaters } from './geocode.js';
 import { addSensCritique } from './senscritique.js';
 import { addRatings } from './ratings.js';
 
 const BASE = 'https://www.allocine.fr';
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36';
-const OUT = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'data', 'programme.json');
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const OUT = join(ROOT, 'public', 'data', 'programme.json');
+const ZONES_CACHE = join(ROOT, '.cache', 'allocine-zones.json');
 
 const args = process.argv.slice(2);
 const argVal = (name, def) => {
@@ -81,11 +83,19 @@ async function pool(items, limit, fn) {
 
 const norm = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z]/g, '');
 
-async function resolveCity([name, zipPrefix]) {
+// Communes officielles d'un département (geo.api.gouv.fr)
+async function communesOf(dep) {
+  const res = await fetch(`https://geo.api.gouv.fr/departements/${dep}/communes?fields=nom,codesPostaux`, { signal: AbortSignal.timeout(30000) });
+  if (!res.ok) throw new Error(`geo.api.gouv.fr ${dep} : HTTP ${res.status}`);
+  return (await res.json()).map((c) => ({ name: c.nom, zips: c.codesPostaux }));
+}
+
+// Commune → ville Allociné : nom identique, ou à défaut même code postal et nom proche
+async function resolveCity({ name, zips }) {
   const data = await get(`/_/localization_city/${encodeURIComponent(name)}`);
-  const cities = (data?.values?.cities || []).map((c) => c.node).filter((c) => String(c.zip).startsWith(zipPrefix));
-  const city = cities.find((c) => norm(c.name) === norm(name)) || cities.find((c) => norm(c.name).startsWith(norm(name).slice(0, 8)));
-  if (!city) console.warn(`  ? ville introuvable : ${name}`);
+  const cities = (data?.values?.cities || []).map((c) => c.node).filter((c) => zips.includes(String(c.zip)));
+  const n = norm(name);
+  const city = cities.find((c) => norm(c.name) === n) || cities.find((c) => norm(c.name).startsWith(n) || n.startsWith(norm(c.name)));
   return city ? { id: city.id, name: city.name } : null;
 }
 
@@ -112,7 +122,7 @@ async function theatersOfCity(city) {
       const { id, name } = JSON.parse(decode(meta[1]));
       const address = decode(card.match(/<address[^>]*>([^<]*)<\/address>/)?.[1] || '');
       const screens = Number(card.match(/screen-number">\s*(\d+)/)?.[1]) || null;
-      if (!found.some((t) => t.id === id)) found.push({ id, name: decode(name), address, screens, area: areaOf(address, city.name) });
+      if (!found.some((t) => t.id === id)) found.push({ id, name: decode(name), address, screens, area: areaOf(address, city.name), dept: address.match(/\b(75|9[1-5])\d{3}\b/)?.[1] || null });
     }
     if (found.length === before) break; // page vide ou répétée → fin
   }
@@ -196,16 +206,44 @@ async function showtimesOf(theaterId, date) {
 
 async function main() {
   const t0 = Date.now();
-  console.log(`▸ Zones : Paris${PARIS_ONLY ? '' : ` + ${SUBURBS.length} villes de banlieue`}`);
-  const cities = [{ id: PARIS_CITY_ID, name: 'Paris' }];
-  if (!PARIS_ONLY) cities.push(...(await pool(SUBURBS, CONCURRENCY, resolveCity)).filter(Boolean));
+  await mkdir(dirname(ZONES_CACHE), { recursive: true });
+  const zones = JSON.parse(await readFile(ZONES_CACHE, 'utf8').catch(() => '{}'));
+  zones.cities ??= {}; // "nom|codes postaux" → { id, name } | null
+  zones.theaters ??= {}; // id ville Allociné → { at, list }
 
-  const theaters = {};
-  for (const list of await pool(cities, CONCURRENCY, theatersOfCity)) {
-    for (const t of list) theaters[t.id] ??= t;
+  const cities = [{ id: PARIS_CITY_ID, name: 'Paris' }];
+  if (!PARIS_ONLY) {
+    const communes = [...(await Promise.all(DEPARTMENTS.map(communesOf))).flat(), ...EXTRA_CITIES.map(([name, zip]) => ({ name, zips: [zip] }))];
+    const key = (c) => `${c.name}|${c.zips.join(',')}`;
+    const unknown = communes.filter((c) => !(key(c) in zones.cities));
+    if (unknown.length) console.log(`▸ Résolution de ${unknown.length} communes sur Allociné…`);
+    await pool(unknown, CONCURRENCY, async (c) => (zones.cities[key(c)] = await resolveCity(c)));
+    const seen = new Set();
+    for (const c of communes) {
+      const city = zones.cities[key(c)];
+      if (city && !seen.has(city.id)) seen.add(city.id) && cities.push(city);
+    }
+    console.log(`▸ Zones : Paris + ${communes.length} communes (${DEPARTMENTS.join(', ')}${EXTRA_CITIES.length ? ' + extra' : ''}), ${cities.length - 1} connues d'Allociné`);
   }
+
+  // Liste des cinémas par ville (Paris toujours rafraîchi, banlieue selon THEATERS_TTL_DAYS)
+  const theaters = {};
+  await pool(cities, CONCURRENCY, async (city) => {
+    const cached = zones.theaters[city.id];
+    const fresh = cached && city.id !== PARIS_CITY_ID && Date.now() - cached.at < THEATERS_TTL_DAYS * 864e5;
+    const list = fresh ? cached.list : await theatersOfCity(city);
+    if (!fresh) zones.theaters[city.id] = { at: Date.now(), list };
+    for (const t of list) theaters[t.id] ??= t;
+  });
+  await writeFile(ZONES_CACHE, JSON.stringify(zones));
   const theaterIds = Object.keys(theaters);
   console.log(`▸ ${theaterIds.length} cinémas trouvés`);
+  if (args.includes('--zones-only')) {
+    const byDept = {};
+    for (const t of Object.values(theaters)) byDept[t.dept || '?'] = (byDept[t.dept || '?'] || 0) + 1;
+    console.log('  par département :', byDept);
+    return;
+  }
 
   const dates = Array.from({ length: DAYS }, (_, i) => isoDay(i));
   const jobs = theaterIds.flatMap((id) => dates.map((date) => ({ id, date })));
