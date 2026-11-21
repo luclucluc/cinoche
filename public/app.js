@@ -174,7 +174,8 @@ const dayLabel = (d, today = parisNow().date) => {
 function buildDays() {
   $('#days').innerHTML =
     `<button role="tab" data-date="week">Toute la semaine</button>` +
-    P.dates.map((d) => `<button role="tab" data-date="${d}">${dayLabel(d)}</button>`).join('');
+    // Jours déjà passés masqués (données de la veille si la mise à jour de la nuit n'a pas encore eu lieu)
+    P.dates.filter((d) => d >= parisNow().date).map((d) => `<button role="tab" data-date="${d}">${dayLabel(d)}</button>`).join('');
 }
 
 // Définition des filtres en « puces » avec liste déroulante
@@ -549,7 +550,7 @@ function applyTheme(pref) {
 const LIST_PARAMS = { g: 'genres', l: 'langs', f: 'formats' };
 function readHash() {
   const h = new URLSearchParams(location.hash.slice(1));
-  if (h.get('d') && (P.dates.includes(h.get('d')) || h.get('d') === 'week')) state.date = h.get('d');
+  if (h.get('d') && ((P.dates.includes(h.get('d')) && h.get('d') >= parisNow().date) || h.get('d') === 'week')) state.date = h.get('d');
   for (const k of ['tab', 'view', 'q', 'sort', 'hours']) if (h.has(k)) state[k] = h.get(k);
   if (!['films', 'map'].includes(state.view)) state.view = 'films';
   state.onlyFavs = h.get('fav') === '1';

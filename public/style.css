@@ -113,6 +113,7 @@ a { color: inherit; }
 /* Blocs accolés : chaque bloc chevauche d'1px le précédent pour ne garder qu'un trait */
 .filters > * + * { margin-top: -1px; }
 .filters .seg button { flex: 1; }
+#version button { font-size: var(--fs-small); padding-top: 4px; padding-bottom: 4px; } /* VO / VF : texte réduit */
 .print-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-top: -1px; }
 .print-btn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: square; }
 .sidebar > * { flex-shrink: 0; }
@@ -132,7 +133,7 @@ a { color: inherit; }
 /* ⓧ : réinitialise le filtre, juste à gauche du « + » */
 .chip-clear {
   position: absolute; top: 50%; right: 26px; transform: translateY(-50%);
-  width: 16px; height: 16px; padding: 0; border: 0; background: none; color: var(--muted); cursor: pointer;
+  width: 13px; height: 13px; padding: 0; border: 0; background: none; color: var(--muted); cursor: pointer;
   opacity: .35; transition: opacity .12s; /* très léger sur les boutons */
 }
 .chip-wrap .chip.active ~ .chip-clear { color: var(--muted); --x-cut: var(--active); }
@@ -140,7 +141,7 @@ a { color: inherit; }
 /* Pictogramme : disque plein + croix « découpée » (couleur du fond) */
 .x-circle svg, .chip-clear svg { display: block; width: 100%; height: 100%; }
 .x-circle svg circle, .chip-clear svg circle { fill: currentColor; }
-.x-circle svg path, .chip-clear svg path { stroke: var(--x-cut, var(--bg)); stroke-width: 1.6; stroke-linecap: round; fill: none; }
+.x-circle svg path, .chip-clear svg path { stroke: var(--x-cut, var(--bg)); stroke-width: 1.8; stroke-linecap: round; fill: none; }
 .filters .chip::after { content: '+'; font-size: 13px; }
 .filters .chip.open::after { content: '−'; }
 .pop.inline { position: static; width: auto; max-height: 420px; box-shadow: none; margin-top: -1px; border-top: 0; }
@@ -169,7 +170,7 @@ a { color: inherit; }
 .seg button.on { background: var(--active); color: var(--ink); font-weight: 600; }
 .link { border: 0; background: none; padding: 0; color: inherit; text-decoration: underline; text-underline-offset: 3px; font-size: inherit; }
 /* Croix entourée (même esprit que l'effacement du champ de recherche) */
-.x-circle { width: 16px; height: 16px; flex: none; padding: 0; border: 0; background: none; color: var(--muted); cursor: pointer; }
+.x-circle { width: 13px; height: 13px; flex: none; padding: 0; border: 0; background: none; color: var(--muted); cursor: pointer; }
 .x-circle:hover { color: var(--ink); }
 
 .pop {
