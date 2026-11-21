@@ -105,7 +105,8 @@ async function init() {
     if (!res.ok) throw new Error(res.status);
     P = await res.json();
   } catch {
-    $('#slate').innerHTML = '<span><b>Erreur</b>Aucune donnée — lancez npm run scrape</span>';
+    $('#empty').textContent = 'Aucune donnée — lancez npm run scrape';
+    $('#empty').hidden = false;
     return;
   }
   for (const [id, m] of Object.entries(P.movies)) {
@@ -440,6 +441,7 @@ function bindControls() {
   bindGeo();
 
   bindPrefs();
+  $('#printBtn').onclick = printProgramme;
   window.addEventListener('hashchange', () => { readHash(); render(); });
 }
 
@@ -567,20 +569,6 @@ function render() {
   const films = state.view === 'films';
   const items = films ? groupByMovie(shows) : groupByTheater(shows);
 
-  const nFilms = new Set(shows.map((s) => s[0])).size;
-  const nCines = new Set(shows.map((s) => s[1])).size;
-  // « Clap » : date, compteurs, mise à jour — façon fiche technique
-  const fmtD = (d) => new Date(d + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '.');
-  const when = state.date === 'week' ? `${fmtD(P.dates[0])} → ${fmtD(P.dates.at(-1))}` : fmtD(state.date);
-  const upd = new Date(P.generatedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-  $('#slate').innerHTML = [
-    ['Date', when],
-    ['Films', nFilms],
-    ['Séances', shows.length],
-    ['Salles', nCines],
-    ...(hiddenSeen.size ? [['Masqués', `${hiddenSeen.size} film${hiddenSeen.size > 1 ? 's' : ''}`, 'prefs']] : []),
-    ['Màj', upd],
-  ].map(([k, v, act]) => (act ? `<button class="slate-btn" data-open-prefs><b>${esc(k)}</b>${esc(v)}</button>` : `<span><b>${esc(k)}</b>${esc(v)}</span>`)).join('');
   $('#empty').hidden = shows.length > 0;
 
   // En-tête des colonnes (vue Films)
@@ -756,10 +744,14 @@ function fillDetail(li) {
     ];
     const nT = byT.size, nS = it.shows.length;
     box.innerHTML =
-      `<p class="facts">${facts.join(' · ')}</p>` +
+      `<div class="film-head"><div class="film-main">` +
       (m.cast.length ? `<p class="credits">Avec ${m.cast.map(esc).join(', ')}</p>` : '') +
       (m.synopsis ? `<p class="synopsis">${esc(m.synopsis)}</p>` : '') +
-      `<p class="credits links">${links.join(' · ')} <span class="count">${nS} séance${nS > 1 ? 's' : ''} · ${nT} cinéma${nT > 1 ? 's' : ''}</span></p>` +
+      `</div><aside class="film-side">` +
+      (facts.length ? `<ul class="facts">${facts.map((f) => `<li>${f}</li>`).join('')}</ul>` : '') +
+      `<ul class="credits links">${links.map((l) => `<li>${l}</li>`).join('')}</ul>` +
+      `<p class="credits links count">${nS} séance${nS > 1 ? 's' : ''} · ${nT} cinéma${nT > 1 ? 's' : ''}</p>` +
+      `</aside></div>` +
       places
         .map(({ t, ss }) => `<div class="place"><div class="place-name">${state.favs.has(t.id) ? '★ ' : ''}${esc(t.name)}<small>${esc(t.area)}${dist(t) != null ? ` · ${fmtDistance(dist(t))}` : ''}</small></div>${timeChips(ss, t.id)}</div>`)
         .join('');
@@ -774,6 +766,104 @@ function fillDetail(li) {
         .map(({ m, ss }) => `<div class="place"><div class="place-name">${esc(m.title)}<small>${esc([m.directors[0], m.year].filter(Boolean).join(' · '))}</small></div>${timeChips(ss, t.id)}</div>`)
         .join('');
   }
+}
+
+// ------------------------------------------------------------------ Export PDF
+
+// Tableau imprimable du programme filtré : film · cinéma · horaires (sans les notes)
+function printProgramme() {
+  if (!current?.shows.length) return alert('Aucune séance à exporter avec ces filtres.');
+  const week = state.date === 'week';
+  const fmtDay = (d) => new Date(d + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  const when = week ? `du ${fmtDay(P.dates[0])} au ${fmtDay(P.dates.at(-1))}` : fmtDay(state.date);
+  const time = (s) => `<span class="pt">${s[2].slice(11)}${s[3] ? `<i>${esc([s[3], ...formatsOf(s).map((f) => FORMAT_LABEL[f] || f)].join(' '))}</i>` : ''}</span>`;
+  const times = (ss) => {
+    if (!week) return ss.map(time).join(' ');
+    const byDay = new Map();
+    for (const s of ss) (byDay.get(s[2].slice(0, 10)) || byDay.set(s[2].slice(0, 10), []).get(s[2].slice(0, 10))).push(s);
+    return [...byDay].map(([d, x]) => `<div><b>${esc(dayLabel(d))}</b> ${x.map(time).join(' ')}</div>`).join('');
+  };
+
+  // Blocs : titres de groupe (rétrospectives) et films avec leurs cinémas
+  const blocks = [];
+  for (const it of groupByMovie(current.shows)) {
+    if (it.group) { blocks.push({ group: `<tr class="pg"><th colspan="3">${esc(it.group)}</th></tr>` }); continue; }
+    const m = it.m;
+    const byT = new Map();
+    for (const s of it.shows) (byT.get(s[1]) || byT.set(s[1], []).get(s[1])).push(s);
+    const places = [...byT].map(([tid, ss]) => ({ t: P.theaters[tid], ss })).sort((a, b) => byPlace(a.t, b.t));
+    const info = [m.directors.join(', '), m.year, m.runtime, m.cast.length && `Avec ${m.cast.slice(0, 3).join(', ')}`].filter(Boolean).map((x) => `<small>${esc(x)}</small>`).join('');
+    blocks.push({
+      head: `<b>${esc(m.title)}</b>${info}`,
+      cont: `<b>${esc(m.title)}</b><small>(suite)</small>`,
+      rows: places.map(({ t, ss }) => `<td class="pcine">${esc(t.name)}<small>${esc(t.area)}</small></td><td class="ptimes">${times(ss)}</td>`),
+    });
+  }
+
+  // Mesure hors écran, à la largeur d'une page A4, pour paginer nous-mêmes :
+  // un film coupé par un saut de page voit son titre répété en haut de la suivante.
+  const out = $('#printout');
+  out.classList.add('measuring');
+  out.innerHTML = `<table>${blocks.map((b) => b.group || [
+    `<tr><td class="pfilm">${b.head}</td><td></td><td></td></tr>`,
+    `<tr><td class="pfilm">${b.cont}</td><td></td><td></td></tr>`,
+    ...b.rows.map((r) => `<tr><td class="pfilm"></td>${r}</tr>`),
+  ].join('')).join('')}</table>`;
+  const hs = [...out.querySelectorAll('tr')].map((tr) => tr.getBoundingClientRect().height);
+  const mm = 96 / 25.4;
+  const pageH = 273 * mm * 0.95; // A4 moins les marges ; réserve car le rendu imprimé est un peu plus haut qu'à l'écran
+  const gap = 14; // espace avant chaque film (sauf en haut de page)
+  let k = 0;
+  for (const b of blocks) {
+    if (b.group) { b.h = hs[k++]; continue; }
+    b.headH = hs[k++]; b.contH = hs[k++];
+    b.rowH = b.rows.map(() => hs[k++]);
+  }
+
+  const pages = [[]];
+  let used = 0;
+  const newPage = () => { pages.push([]); used = 0; };
+  const segment = (b, from, to, cont) => {
+    const n = to - from;
+    return b.rows.slice(from, to).map((r, i) =>
+      `<tr class="${i === 0 ? (cont ? 'pc' : 'pf') : ''}">` +
+      (i === 0 ? `<td class="pfilm" rowspan="${n}">${cont ? b.cont : b.head}</td>` : '') + r + '</tr>'
+    ).join('');
+  };
+  blocks.forEach((b, bi) => {
+    if (b.group) {
+      // un titre de groupe ne reste pas seul en bas de page
+      const next = blocks[bi + 1];
+      const need = b.h + (next && !next.group ? Math.max(next.headH, next.rowH[0]) : 0);
+      if (used && used + need > pageH) newPage();
+      pages.at(-1).push(b.group); used += b.h;
+      return;
+    }
+    let from = 0, cont = false;
+    if (used && used + gap + Math.max(b.headH, b.rowH[0]) <= pageH) { pages.at(-1).push('<tr class="psp"><td colspan="3"></td></tr>'); used += gap; }
+    while (from < b.rows.length) {
+      const headH = cont ? b.contH : b.headH;
+      let to = from, sum = 0;
+      while (to < b.rows.length && used + Math.max(headH, sum + b.rowH[to]) <= pageH) sum += b.rowH[to++];
+      if (to === from) {
+        if (used === 0) sum = b.rowH[to++]; // ligne plus haute qu'une page : on la place quand même
+        else { newPage(); cont = from > 0; continue; }
+      }
+      pages.at(-1).push(segment(b, from, to, cont));
+      used += Math.max(headH, sum);
+      from = to;
+      if (from < b.rows.length) { newPage(); cont = true; }
+    }
+  });
+
+  out.classList.remove('measuring');
+  out.innerHTML =
+    `<div class="pmargin">Paris Ciné — ${esc(when)}</div>` +
+    pages.filter((p) => p.length).map((p) => `<table class="ppage"><tbody>${p.join('')}</tbody></table>`).join('');
+  const title = document.title;
+  document.title = `Paris Ciné — programme ${week ? 'semaine' : state.date}`;
+  window.addEventListener('afterprint', () => { document.title = title; }, { once: true });
+  window.print();
 }
 
 // ------------------------------------------------------------------ Position & carte

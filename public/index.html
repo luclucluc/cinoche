@@ -17,6 +17,7 @@
           <input id="q" type="search" placeholder="Film, réalisateur, acteur, cinéma…" autocomplete="off" />
           <kbd>/</kbd>
         </label>
+        <button id="printBtn" class="icon-btn text-btn" title="Exporter le programme filtré en PDF">PDF</button>
         <button id="prefsBtn" class="icon-btn" title="Préférences" aria-label="Préférences" aria-haspopup="dialog">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0" /><path d="M14 4v4M8 10v4M16 16v4" /></svg>
         </button>
@@ -79,7 +80,6 @@
     <main id="main">
       <section class="map-box" id="mapBox" hidden><div id="map"></div></section>
       <section class="list-col">
-        <div class="slate" id="slate"></div>
         <div class="list-head" id="listHead"></div>
         <ol class="list" id="list"></ol>
         <p class="empty" id="empty" hidden>Aucune séance ne correspond à ces filtres.</p>
@@ -91,6 +91,9 @@
       <span>Vos préférences restent dans ce navigateur — <button class="link" data-open-prefs>exporter / importer</button></span>
       <span>Données : Allociné · Adresses : BAN · Carte : OpenFreeMap / OpenStreetMap</span>
     </footer>
+
+    <!-- Export PDF (visible uniquement à l’impression) -->
+    <section class="printout" id="printout"></section>
 
     <!-- Préférences -->
     <div class="prefs-overlay" id="prefsOverlay" hidden></div>
