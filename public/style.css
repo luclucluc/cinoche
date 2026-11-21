@@ -151,7 +151,7 @@ a { color: inherit; }
 .pop.inline { position: static; width: auto; max-height: 420px; box-shadow: none; margin-top: -1px; border-top: 0; }
 /* Les filtres occupent toute la colonne : collés au bord de la fenêtre et à la ligne de droite */
 @media (min-width: 861px) {
-  .side-head { padding-left: var(--pad); padding-right: 16px; }
+  .side-head { padding-left: var(--pad); padding-right: 12px; } /* ⓧ alignée sur celle de la recherche */
   .filters .chip, .filters .pop.inline { border-left: 0; border-right: 0; }
   .filters .chip { padding-left: var(--pad); }
   .filters .seg button:first-child { border-left: 0; }
@@ -179,6 +179,9 @@ a { color: inherit; }
 /* Croix entourée (même esprit que l'effacement du champ de recherche) */
 .x-circle { width: 13px; height: 13px; flex: none; padding: 0; border: 0; background: none; color: var(--muted); cursor: pointer; }
 .x-circle:hover { color: var(--ink); }
+/* Recherche : croix native masquée, remplacée par la ⓧ maison */
+.search input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; display: none; }
+.search .x-circle[hidden] { display: none; }
 
 .pop {
   position: fixed; z-index: 50; width: 300px; max-height: min(460px, 70vh); display: flex; flex-direction: column;
@@ -255,6 +258,8 @@ main { padding: 0 var(--pad) 0 var(--gutter); min-width: 0; }
 .item.open { background: var(--active); }
 .row { width: 100%; padding: 10px 8px; cursor: pointer; }
 .row:hover { background: var(--hover); }
+/* Liste des films : le survol déborde jusqu'aux bords (marge gauche et marge droite de la zone de résultats) */
+#results:not(.map-mode) .row:hover { box-shadow: calc(-1 * var(--gutter)) 0 0 var(--hover), var(--pad) 0 0 var(--hover); }
 .item.open { border-bottom-color: var(--line); }
 .item.open > .row { background: transparent; }
 .poster { width: var(--poster); aspect-ratio: 3 / 4; background: var(--hair) center / cover; outline: 1px solid var(--line); outline-offset: -1px; }
@@ -263,7 +268,7 @@ main { padding: 0 var(--pad) 0 var(--gutter); min-width: 0; }
 /* Avant-première : mention verticale, lue de bas en haut, juste avant le titre */
 .title .ap {
   flex: none; align-self: center; writing-mode: vertical-rl; transform: rotate(180deg);
-  font: 600 var(--fs-small)/1.25 var(--mono); margin-right: -4px;
+  font: 600 var(--fs-small)/1 var(--mono); margin-right: -4px; text-align: center; /* « Avant » centré sur « première » */
 }
 .title.with-fav > .ap + span { margin-right: auto; }
 /* Nouveauté : petit astérisque au coin haut gauche du titre */

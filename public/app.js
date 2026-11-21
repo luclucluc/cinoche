@@ -266,9 +266,9 @@ const isActive = (key) => {
 };
 
 let popKey = null;
-function openPop(key, chip) {
+function openPop(key, chip, animate = true) {
   const pop = $('#pop');
-  if (popKey === key) return closePop();
+  if (popKey === key) return closePop(true);
   popKey = key;
   const f = FILTERS[key];
   const opts = f.options();
@@ -297,6 +297,7 @@ function openPop(key, chip) {
     (f.note ? `<p class="pop-note">${esc(f.note)}</p>` : '') +
     `<ul class="pop-list">${rows}</ul>`;
   pop.hidden = false;
+  pop.style.height = pop.style.overflow = pop.style.transition = ''; // annule une animation en cours
   const inline = !!chip.closest('.sidebar');
   pop.classList.toggle('inline', inline);
   if (inline) {
@@ -310,7 +311,8 @@ function openPop(key, chip) {
     pop.style.top = r.bottom + 6 + 'px';
   }
   for (const c of document.querySelectorAll('.chip')) c.classList.toggle('open', c === chip);
-  pop.querySelector('.pop-search')?.focus();
+  if (inline && animate) slide(pop, 'open');
+  pop.querySelector('.pop-search')?.focus({ preventScroll: true });
 }
 // Bloc « Autour de… » du filtre Lieu : point (position ou adresse) + distance
 // Curseur de distance : 200 m → 10 km, progression quadratique (plus fin sur les petites distances)
@@ -342,7 +344,7 @@ function reopenPop(key) {
   const chip = document.querySelector(`.chip[data-f="${key}"]`);
   closePop();
   render();
-  openPop(key, chip);
+  openPop(key, chip, false); // réaffichage : pas d'animation
 }
 function useNear(geo) {
   if (geo) { state.geo = geo; state.selected = null; store.set('geo', geo); }
@@ -351,10 +353,32 @@ function useNear(geo) {
   reopenPop('zone');
 }
 
-function closePop() {
+function closePop(animate = false) {
   popKey = null;
-  $('#pop').hidden = true;
   for (const c of document.querySelectorAll('.chip')) c.classList.remove('open');
+  const pop = $('#pop');
+  if (animate && pop.classList.contains('inline') && !pop.hidden) {
+    // se replie en glissant, puis se masque (sauf si un autre filtre a été ouvert entre-temps)
+    slide(pop, 'close', () => { if (popKey === null) pop.hidden = true; });
+  } else pop.hidden = true;
+}
+
+// Dépliage / repliage en douceur des filtres de la colonne
+const SLIDE_MS = 250;
+const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+function slide(el, dir, done) {
+  if (reducedMotion()) return done?.();
+  const full = el.getBoundingClientRect().height;
+  el.style.overflow = 'hidden';
+  el.style.height = (dir === 'open' ? 0 : full) + 'px';
+  el.getBoundingClientRect(); // point de départ
+  el.style.transition = `height ${SLIDE_MS}ms ease`;
+  el.style.height = (dir === 'open' ? full : 0) + 'px';
+  clearTimeout(el._slideTimer);
+  el._slideTimer = setTimeout(() => {
+    el.style.height = el.style.overflow = el.style.transition = '';
+    done?.();
+  }, SLIDE_MS + 20);
 }
 
 // Bouton ⓧ à côté du « + » d'un filtre actif : réinitialise ce seul filtre
@@ -496,14 +520,17 @@ function bindControls() {
   $('#sideClose').onclick = () => document.body.classList.remove('filters-open');
 
   let t;
+  // Croix d'effacement maison (même ⓧ et même retrait à droite que « Filtres »)
+  $('#qClear').onclick = () => { $('#q').value = ''; $('#qClear').hidden = true; state.q = ''; render(); $('#q').focus(); };
   $('#q').addEventListener('input', (e) => {
+    $('#qClear').hidden = !e.target.value;
     clearTimeout(t);
     t = setTimeout(() => { state.q = e.target.value.trim(); render(); }, 120);
   });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && popKey) return closePop();
     if (e.key === '/' && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) { e.preventDefault(); $('#q').focus(); }
-    if (e.key === 'Escape' && document.activeElement === $('#q')) { $('#q').value = ''; state.q = ''; render(); $('#q').blur(); }
+    if (e.key === 'Escape' && document.activeElement === $('#q')) { $('#q').value = ''; $('#qClear').hidden = true; state.q = ''; render(); $('#q').blur(); }
   });
 
   $('#list').addEventListener('click', (e) => {
@@ -562,7 +589,7 @@ function readHash() {
   if (!['films', 'map'].includes(state.view)) state.view = 'films';
   state.onlyFavs = h.get('fav') === '1';
   for (const [p, k] of Object.entries(LIST_PARAMS)) if (h.has(p)) state[k] = new Set(h.get(p).split(',').filter(Boolean));
-  if (h.has('q')) $('#q').value = state.q;
+  if (h.has('q')) { $('#q').value = state.q; $('#qClear').hidden = !state.q; }
 }
 function writeHash() {
   const h = new URLSearchParams();
