@@ -27,7 +27,7 @@
           <button data-tab="retro">Rétrospectives</button>
         </nav>
         <div class="top-actions">
-          <button id="printBtn" class="text-btn" title="Exporter le programme filtré en PDF">PDF</button>
+          <button id="seenBtn" class="text-btn seen-btn" aria-haspopup="dialog" aria-label="Films vus"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5" /></svg><span id="seenCount"></span></button>
           <button id="prefsBtn" class="text-btn" title="Compte : apparence, notes, masquages, export" aria-haspopup="dialog">Compte</button>
         </div>
       </div>
@@ -54,16 +54,17 @@
           <button class="chip" data-f="langs"></button>
           <button class="chip" data-f="genres"></button>
           <button class="chip" data-f="formats"></button>
+          <div class="seg view-seg" id="view" role="group" aria-label="Affichage des résultats">
+            <button data-view="films" class="on">Liste</button>
+            <button data-view="map">Carte</button>
+          </div>
+          <button id="printBtn" class="text-btn print-btn" title="Exporter le programme filtré en PDF"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14" /></svg>PDF</button>
         </div>
       </aside>
 
       <main id="main">
         <div class="results-bar">
           <button class="text-btn filters-toggle" id="filtersToggle">Filtres</button>
-          <div class="seg" id="view" role="group" aria-label="Affichage des résultats">
-            <button data-view="films" class="on">Liste</button>
-            <button data-view="map">Carte</button>
-          </div>
           <button class="chip" data-f="sort"></button>
           <span class="results-count" id="resultsCount"></span>
         </div>
@@ -87,6 +88,16 @@
 
     <!-- Export PDF (visible uniquement à l’impression) -->
     <section class="printout" id="printout"></section>
+
+    <!-- Films vus -->
+    <div class="prefs-overlay" id="seenOverlay" hidden></div>
+    <aside class="prefs seen-panel" id="seenPanel" role="dialog" aria-modal="true" aria-labelledby="seenTitle" hidden>
+      <div class="prefs-head">
+        <b id="seenTitle">Films vus</b>
+        <button class="icon-btn" id="seenClose" aria-label="Fermer">✕</button>
+      </div>
+      <ol class="seen-list" id="seenList"></ol>
+    </aside>
 
     <!-- Préférences -->
     <div class="prefs-overlay" id="prefsOverlay" hidden></div>

@@ -80,6 +80,9 @@ const state = {
   sort: 'copies',
   q: '',
   favs: new Set(store.get('favs', [])),
+  favMovies: new Set(store.get('favMovies', [])), // films en favori (signet)
+  // films déjà vus : fiche conservée (le film peut quitter l'affiche), date, note perso /5
+  seen: store.get('seen', {}),
   hiddenPeople: new Set(store.get('hiddenPeople', [])), // acteurs / réalisateurs masqués
   hiddenChains: new Set(store.get('hiddenChains', [])), // enseignes masquées
   showRatings: new Set(store.get('ratings', RATINGS.map((r) => r.key))), // notes affichées
@@ -103,6 +106,7 @@ init();
 async function init() {
   applyTheme(store.get('theme', null));
   new ResizeObserver(([e]) => document.documentElement.style.setProperty('--header-h', e.target.offsetHeight + 'px')).observe($('.top'));
+  new ResizeObserver(([e]) => document.documentElement.style.setProperty('--bar-h', e.target.offsetHeight + 'px')).observe($('.results-bar'));
   try {
     const res = await fetch('data/programme.json', { cache: 'no-cache' });
     if (!res.ok) throw new Error(res.status);
@@ -125,6 +129,12 @@ async function init() {
     t.chain = chainOf(t);
     t.dept ??= t.address.match(/\b(75|9[1-5])\d{3}\b/)?.[1] || (t.area.startsWith('Paris ') ? '75' : null);
   }
+  // Ancien format des films vus (liste d'identifiants)
+  for (const id of store.get('seenMovies', [])) if (!state.seen[id] && P.movies[id]) markSeen(id);
+  localStorage.removeItem('pc.seenMovies');
+  store.set('seen', state.seen);
+  updateSeenBtn();
+
   const today = parisNow().date;
   state.date = P.dates.includes(today) ? today : P.dates[0];
   // Ne garder que des cinémas encore présents
@@ -287,7 +297,14 @@ function openPop(key, chip) {
   pop.querySelector('.pop-search')?.focus();
 }
 // Bloc « Autour de… » du filtre Lieu : point (position ou adresse) + distance
-const RADII = [500, 1000, 2000, 3000, 5000, 10000];
+// Curseur de distance : 200 m → 10 km, progression quadratique (plus fin sur les petites distances)
+const R_MIN = 200, R_MAX = 10000, STEPS = 1000;
+const sliderToRadius = (v) => {
+  const d = R_MIN + (R_MAX - R_MIN) * (v / STEPS) ** 2;
+  const step = d < 1000 ? 50 : d < 3000 ? 100 : 500;
+  return Math.round(d / step) * step;
+};
+const radiusToSlider = (d) => Math.round(STEPS * Math.sqrt(Math.max(0, d - R_MIN) / (R_MAX - R_MIN)));
 let nearResults = [], nearMsg = '';
 function nearBlock() {
   const on = state.zone === '@near';
@@ -297,7 +314,11 @@ function nearBlock() {
       <button class="btn" data-action="locate">Ma position</button>
       <div class="pop-addr-wrap"><input class="pop-addr" type="search" placeholder="ou une adresse…" autocomplete="off" /><ul class="suggest pop-addr-list" hidden></ul></div>
     </div>
-    <div class="seg pop-radius">${RADII.map((r) => `<button data-action="radius" data-r="${r}" class="${on && state.radius === r ? 'on' : ''}">${fmtDistance(r)}</button>`).join('')}</div>
+    <div class="pop-range">
+      <input type="range" class="pop-radius-range" min="0" max="${STEPS}" step="1" value="${radiusToSlider(state.radius)}" aria-label="Distance" ${state.geo ? '' : 'disabled title="Choisissez d’abord un point"'} />
+      <output class="pop-radius-val">${fmtDistance(state.radius)}</output>
+    </div>
+    <div class="pop-range-scale"><span>200 m</span><span>10 km</span></div>
     ${nearMsg ? `<p class="pop-note">${esc(nearMsg)}</p>` : ''}
   </div>`;
 }
@@ -396,8 +417,22 @@ function bindControls() {
     render();
     openPop(key, chip);
   });
-  let addrTimer;
+  let addrTimer, rangeTimer;
   pop.addEventListener('input', (e) => {
+    // Curseur de distance : mise à jour en direct de la valeur, de la liste et de la carte
+    if (e.target.classList.contains('pop-radius-range')) {
+      state.radius = sliderToRadius(Number(e.target.value));
+      pop.querySelector('.pop-radius-val').textContent = fmtDistance(state.radius);
+      pop.querySelector('.pop-near')?.classList.add('on');
+      store.set('radius', state.radius);
+      if (state.geo && state.zone !== '@near') {
+        FILTERS.zone.set('@near');
+        for (const i of pop.querySelectorAll('input[name="pop-zone"]')) i.checked = false; // la zone devient « autour de »
+      }
+      clearTimeout(rangeTimer);
+      rangeTimer = setTimeout(render, 60);
+      return;
+    }
     if (e.target.classList.contains('pop-addr')) {
       clearTimeout(addrTimer);
       const q = e.target.value.trim();
@@ -433,6 +468,20 @@ function bindControls() {
   });
 
   $('#list').addEventListener('click', (e) => {
+    const mfav = e.target.closest('.mfav');
+    if (mfav) {
+      e.stopPropagation();
+      // Cycle : rien → favori → vu → rien
+      const id = mfav.dataset.id;
+      if (state.favMovies.has(id)) { state.favMovies.delete(id); markSeen(id); }
+      else if (state.seen[id]) delete state.seen[id];
+      else state.favMovies.add(id);
+      store.set('favMovies', [...state.favMovies]);
+      store.set('seen', state.seen);
+      updateSeenBtn();
+      render();
+      return;
+    }
     const fav = e.target.closest('.fav');
     if (fav) {
       e.stopPropagation();
@@ -455,6 +504,7 @@ function bindControls() {
 
 
   bindPrefs();
+  bindSeen();
   $('#printBtn').onclick = printProgramme;
   window.addEventListener('hashchange', () => { readHash(); render(); });
 }
@@ -629,7 +679,8 @@ function groupByMovie(shows) {
     title: (a, b) => a.m.title.localeCompare(b.m.title, 'fr'),
     ...Object.fromEntries(RATINGS.map((r) => [r.key, byRating(r.key)])),
   }[state.sort] || ((a, b) => b.theaters.size - a.theaters.size);
-  list.sort(by);
+  // Les films en favori passent en tête, dans l'ordre du tri choisi
+  list.sort((a, b) => state.favMovies.has(b.m.id) - state.favMovies.has(a.m.id) || by(a, b));
 
   const card = (x) => {
     const key = 'm' + x.m.id;
@@ -685,13 +736,24 @@ function ratingCells(m) {
   }).join('')}</span>`;
 }
 
+// Signet : contour → rempli (favori) → coche (vu) → contour
+function bookmark(m) {
+  const st = state.favMovies.has(m.id) ? 'on' : state.seen[m.id] ? 'seen' : '';
+  const [label, icon] = {
+    on: ['Favori — cliquer pour marquer comme vu', '<path d="M6.5 3.5h11v17l-5.5-4.2-5.5 4.2z" />'],
+    seen: ['Vu — cliquer pour réinitialiser', '<path d="M4 12.5l5 5L20 6.5" />'],
+    '': ['Ajouter aux favoris', '<path d="M6.5 3.5h11v17l-5.5-4.2-5.5 4.2z" />'],
+  }[st];
+  return `<button class="mfav${st ? ' ' + st : ''}" data-id="${m.id}" title="${label}" aria-label="${label}"><svg viewBox="0 0 24 24" aria-hidden="true">${icon}</svg></button>`;
+}
+
 function movieRow(key, m) {
   const open = state.open.has(key) ? ' open' : '';
   const orig = m.originalTitle ? `<small>${esc(m.originalTitle)}</small>` : '';
   return `<li class="item${open}" data-key="${key}">
     <div class="row" role="button" tabindex="0">
       <span class="poster" style="background-image:url('${POSTER(m.poster)}')"></span>
-      <span class="title">${esc(m.title)}${orig}</span>
+      <span class="title">${esc(m.title)}${bookmark(m)}${orig}</span>
       <span class="who"><span>${esc(m.directors.slice(0, 2).join(', ') || '—')}</span><span class="year">${esc(m.year || '')}</span></span>
       ${ratingCells(m)}
     </div>
@@ -782,6 +844,88 @@ function fillDetail(li) {
         .map(({ m, ss }) => `<div class="place"><div class="place-name">${esc(m.title)}<small>${esc([m.directors[0], m.year].filter(Boolean).join(' · '))}</small></div>${timeChips(ss, t.id)}</div>`)
         .join('');
   }
+}
+
+// ------------------------------------------------------------------ Films vus
+
+function markSeen(id) {
+  const m = P.movies[id];
+  state.seen[id] = {
+    title: m.title, year: m.year || null, directors: m.directors.slice(0, 2), poster: m.poster || null,
+    allocineId: m.allocineId, at: parisNow().date, rating: null,
+  };
+}
+const saveSeen = () => { store.set('seen', state.seen); updateSeenBtn(); };
+function updateSeenBtn() {
+  const n = Object.keys(state.seen).length;
+  $('#seenBtn').title = `Films vus (${n})`;
+  $('#seenCount').textContent = n || '';
+}
+
+function renderSeen() {
+  const list = Object.entries(state.seen).sort((a, b) => String(b[1].at).localeCompare(String(a[1].at)) || a[1].title.localeCompare(b[1].title, 'fr'));
+  const date = (d) => new Date(d + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+  $('#seenList').innerHTML = list.length
+    ? list.map(([id, f]) => `<li class="seen-item" data-id="${id}">
+        <span class="seen-poster" style="background-image:url('${POSTER(f.poster)}')"></span>
+        <div class="seen-body">
+          <b>${esc(f.title)}</b>
+          <small>${esc([f.directors.join(', '), f.year].filter(Boolean).join(' · '))}</small>
+          <small>Vu le ${esc(date(f.at))}</small>
+          <div class="seen-actions">
+            <span class="stars" role="group" aria-label="Ma note">${[1, 2, 3, 4, 5].map((n) => `<button data-rate="${n}" class="${f.rating >= n ? 'on' : ''}" aria-label="${n} sur 5" title="${n}/5">${f.rating >= n ? '★' : '☆'}</button>`).join('')}</span>
+            <button class="link" data-share>Partager</button>
+            <button class="link muted" data-unseen>Retirer</button>
+          </div>
+        </div>
+      </li>`).join('')
+    : '<li class="seen-empty">Aucun film vu pour l’instant. Dans la liste, cliquez deux fois sur le signet d’un film pour le marquer comme vu.</li>';
+}
+
+async function shareSeen(id, btn) {
+  const f = state.seen[id];
+  const by = f.directors.length ? ` de ${f.directors.join(', ')}` : '';
+  const stars = f.rating ? ` — ${'★'.repeat(f.rating)}${'☆'.repeat(5 - f.rating)}` : '';
+  const text = `J’ai vu ${f.title}${f.year ? ` (${f.year})` : ''}${by}${stars}`;
+  const url = FILM_URL(f.allocineId);
+  try {
+    if (navigator.share) return await navigator.share({ title: f.title, text, url });
+    await navigator.clipboard.writeText(`${text}\n${url}`);
+    btn.textContent = 'Copié ✓';
+    setTimeout(() => { btn.textContent = 'Partager'; }, 1500);
+  } catch { /* partage annulé */ }
+}
+
+function openSeen() {
+  closePop();
+  renderSeen();
+  $('#seenPanel').hidden = $('#seenOverlay').hidden = false;
+  document.body.classList.add('no-scroll');
+  $('#seenClose').focus();
+}
+function closeSeen() {
+  $('#seenPanel').hidden = $('#seenOverlay').hidden = true;
+  document.body.classList.remove('no-scroll');
+  render(); // les coches de la liste suivent les retraits
+}
+
+function bindSeen() {
+  $('#seenBtn').onclick = openSeen;
+  $('#seenClose').onclick = closeSeen;
+  $('#seenOverlay').onclick = closeSeen;
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#seenPanel').hidden) closeSeen(); });
+  $('#seenList').onclick = (e) => {
+    const li = e.target.closest('.seen-item');
+    if (!li) return;
+    const id = li.dataset.id;
+    const rate = e.target.closest('[data-rate]');
+    if (rate) {
+      const n = Number(rate.dataset.rate);
+      state.seen[id].rating = state.seen[id].rating === n ? null : n; // re-cliquer la même étoile efface la note
+      saveSeen(); renderSeen();
+    } else if (e.target.closest('[data-share]')) shareSeen(id, e.target.closest('[data-share]'));
+    else if (e.target.closest('[data-unseen]')) { delete state.seen[id]; saveSeen(); renderSeen(); }
+  };
 }
 
 // ------------------------------------------------------------------ Export PDF
