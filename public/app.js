@@ -81,6 +81,7 @@ const state = {
   q: '',
   favs: new Set(store.get('favs', [])),
   favMovies: new Set(store.get('favMovies', [])), // films en favori (signet)
+  onlyFavs: false, // bouton « Favoris » : n'afficher que les films en favori
   // films déjà vus : fiche conservée (le film peut quitter l'affiche), date, note perso /5
   seen: store.get('seen', {}),
   hiddenPeople: new Set(store.get('hiddenPeople', [])), // acteurs / réalisateurs masqués
@@ -136,7 +137,7 @@ async function init() {
   updateSeenBtn();
 
   const today = parisNow().date;
-  state.date = P.dates.includes(today) ? today : P.dates[0];
+  state.date = 'week'; // par défaut, toute la semaine (comme paris-cine.info)
   // Ne garder que des cinémas encore présents
   for (const id of state.cinemas) if (!P.theaters[id]) state.cinemas.delete(id);
 
@@ -172,8 +173,8 @@ const dayLabel = (d, today = parisNow().date) => {
 
 function buildDays() {
   $('#days').innerHTML =
-    P.dates.map((d) => `<button role="tab" data-date="${d}">${dayLabel(d)}</button>`).join('') +
-    `<button role="tab" data-date="week">Toute la semaine</button>`;
+    `<button role="tab" data-date="week">Toute la semaine</button>` +
+    P.dates.map((d) => `<button role="tab" data-date="${d}">${dayLabel(d)}</button>`).join('');
 }
 
 // Définition des filtres en « puces » avec liste déroulante
@@ -279,7 +280,10 @@ function openPop(key, chip) {
     })
     .join('');
   pop.innerHTML =
-    `<div class="pop-head"><b>${esc(f.label)}</b>${f.single ? '' : '<button class="link" data-action="clear">Effacer</button>'}</div>` +
+    // Dans la colonne de filtres, le bouton porte déjà le nom du filtre : pas de titre répété
+    (chip.closest('.sidebar')
+      ? f.single ? '' : '<div class="pop-head pop-head-mini"><button class="link" data-action="clear">Effacer la sélection</button></div>'
+      : `<div class="pop-head"><b>${esc(f.label)}</b>${f.single ? '' : '<button class="link" data-action="clear">Effacer</button>'}</div>`) +
     (key === 'zone' ? nearBlock() : '') +
     (f.search ? `<input class="pop-search" type="search" placeholder="Rechercher…" />` : '') +
     (f.note ? `<p class="pop-note">${esc(f.note)}</p>` : '') +
@@ -288,7 +292,7 @@ function openPop(key, chip) {
   const inline = !!chip.closest('.sidebar');
   pop.classList.toggle('inline', inline);
   if (inline) {
-    chip.after(pop);
+    (chip.closest('.chip-wrap') || chip).after(pop);
     pop.style.left = pop.style.top = '';
   } else {
     document.body.append(pop);
@@ -345,7 +349,29 @@ function closePop() {
   for (const c of document.querySelectorAll('.chip')) c.classList.remove('open');
 }
 
+// Bouton ⓧ à côté du « + » d'un filtre actif : réinitialise ce seul filtre
+function addClearButtons() {
+  for (const chip of document.querySelectorAll('.sidebar .chip')) {
+    const wrap = document.createElement('div');
+    wrap.className = 'chip-wrap';
+    chip.before(wrap);
+    wrap.append(chip);
+    wrap.insertAdjacentHTML('beforeend', `<button class="chip-clear" data-clear="${chip.dataset.f}" title="Réinitialiser ce filtre" aria-label="Réinitialiser ce filtre" hidden>×</button>`);
+  }
+  document.querySelector('.sidebar').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-clear]');
+    if (!b) return;
+    e.stopPropagation();
+    const key = b.dataset.clear, f = FILTERS[key];
+    if (f.single) f.set(f.def);
+    else { state[key].clear(); f.set?.(); }
+    if (popKey === key) closePop();
+    render();
+  });
+}
+
 function bindControls() {
+  addClearButtons();
   const seg = (sel, key, attr) =>
     $(sel).addEventListener('click', (e) => {
       const b = e.target.closest(`[data-${attr}]`);
@@ -371,8 +397,10 @@ function bindControls() {
     }
     state.version = '';
     store.set('version', '');
+    state.onlyFavs = false;
     render();
   };
+  $('#favBtn').onclick = () => { state.onlyFavs = !state.onlyFavs; render(); };
   const pop = $('#pop');
   pop.addEventListener('click', (e) => e.stopPropagation());
   pop.addEventListener('change', (e) => {
@@ -524,17 +552,19 @@ function readHash() {
   if (h.get('d') && (P.dates.includes(h.get('d')) || h.get('d') === 'week')) state.date = h.get('d');
   for (const k of ['tab', 'view', 'q', 'sort', 'hours']) if (h.has(k)) state[k] = h.get(k);
   if (!['films', 'map'].includes(state.view)) state.view = 'films';
+  state.onlyFavs = h.get('fav') === '1';
   for (const [p, k] of Object.entries(LIST_PARAMS)) if (h.has(p)) state[k] = new Set(h.get(p).split(',').filter(Boolean));
   if (h.has('q')) $('#q').value = state.q;
 }
 function writeHash() {
   const h = new URLSearchParams();
-  if (state.date !== P.dates[0]) h.set('d', state.date);
+  if (state.date !== 'week') h.set('d', state.date);
   if (state.tab !== 'all') h.set('tab', state.tab);
   if (state.view !== 'films') h.set('view', state.view);
   if (state.sort !== 'copies') h.set('sort', state.sort);
   if (state.hours !== '0') h.set('hours', state.hours);
   for (const [p, k] of Object.entries(LIST_PARAMS)) if (state[k].size) h.set(p, [...state[k]].join(','));
+  if (state.onlyFavs) h.set('fav', '1');
   if (state.q) h.set('q', state.q);
   const s = h.toString();
   history.replaceState(null, '', s ? '#' + s : location.pathname + location.search);
@@ -599,6 +629,7 @@ function filteredShows() {
     if (state.langs.size && !state.langs.has(m.lang)) return false;
     if (state.genres.size && !m.genres.some((g) => state.genres.has(g))) return false;
     if (q && !m._q.includes(q) && !t._q.includes(q)) return false;
+    if (state.onlyFavs && !state.favMovies.has(m.id)) return false;
     if (isHiddenMovie(m)) { hiddenSeen.add(m.id); return false; } // en dernier : compte les films réellement masqués
     return true;
   });
@@ -621,10 +652,14 @@ function render() {
   for (const c of document.querySelectorAll('.chip')) {
     c.textContent = chipText(c.dataset.f);
     c.classList.toggle('active', isActive(c.dataset.f));
+    const clr = c.parentElement.querySelector('.chip-clear');
+    if (clr) clr.hidden = !isActive(c.dataset.f);
   }
   if (state.sort !== 'copies' && RATINGS.some((r) => r.key === state.sort) && !state.showRatings.has(state.sort)) state.sort = 'copies';
   const isMap = state.view === 'map';
-  $('#reset').hidden = !Object.keys(FILTERS).some(isActive) && !state.version;
+  $('#reset').hidden = !Object.keys(FILTERS).some(isActive) && !state.version && !state.onlyFavs;
+  updateFavBtn();
+  $('#empty').textContent = state.onlyFavs && !state.favMovies.size ? 'Aucun favori pour l’instant : cliquez sur le signet d’un film pour l’ajouter.' : 'Aucune séance ne correspond à ces filtres.';
   $('#mapBox').hidden = !isMap;
   document.querySelector('.chip[data-f="sort"]').hidden = isMap; // le tri concerne la liste des films
   $('#results').classList.toggle('map-mode', isMap);
@@ -683,7 +718,7 @@ function groupByMovie(shows) {
     ...Object.fromEntries(RATINGS.map((r) => [r.key, byRating(r.key)])),
   }[state.sort] || ((a, b) => b.theaters.size - a.theaters.size);
   // Les films en favori passent en tête, dans l'ordre du tri choisi
-  list.sort((a, b) => state.favMovies.has(b.m.id) - state.favMovies.has(a.m.id) || by(a, b));
+  list.sort(by); // les favoris restent à leur place (bouton « Favoris » pour les isoler)
 
   const card = (x) => {
     const key = 'm' + x.m.id;
@@ -860,6 +895,13 @@ function markSeen(id) {
   };
 }
 const saveSeen = () => { store.set('seen', state.seen); updateSeenBtn(); };
+function updateFavBtn() {
+  const n = [...state.favMovies].filter((id) => P.movies[id]).length;
+  $('#favBtn').title = state.onlyFavs ? 'Afficher tous les films' : `Afficher uniquement mes favoris (${n})`;
+  $('#favCount').textContent = n || '';
+  $('#favBtn').classList.toggle('on', state.onlyFavs);
+  $('#favBtn').setAttribute('aria-pressed', state.onlyFavs);
+}
 function updateSeenBtn() {
   const n = Object.keys(state.seen).length;
   $('#seenBtn').title = `Films vus (${n})`;
