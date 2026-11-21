@@ -59,6 +59,15 @@ jobs:
         env:
           TZ: Europe/Paris
 
+      # Version des fichiers dans les liens : le navigateur ne mélange jamais une nouvelle page
+      # avec une ancienne feuille de style ou d'anciens scripts (cache de 10 min de GitHub Pages)
+      - name: Numéros de version des fichiers
+        run: |
+          V=${GITHUB_SHA::8}
+          sed -i -E "s#(href|src)=\"(style\.css|app\.js)\"#\1=\"\2?v=$V\"#g" public/index.html
+          sed -i -E "s#from '\./([a-z]+\.js)'#from './\1?v=$V'#g" public/*.js
+          grep -n "?v=" public/index.html public/*.js | head
+
       - uses: actions/configure-pages@v6
 
       - uses: actions/upload-pages-artifact@v5
