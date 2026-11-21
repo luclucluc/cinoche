@@ -215,7 +215,6 @@ const FILTERS = {
     options: () => CARDS.map((c) => [c.id, c.label]),
     set: () => store.set('cards', [...state.cards]),
     none: 'Aucune',
-    note: 'UGC Illimité : salles UGC et MK2 ; CinéPass : Pathé ; CIP : les 32 salles adhérentes ; Cinéchèques : liste officielle cinecheque.fr.',
   },
   langs: { label: 'Langues', options: () => OPTIONS.langs.map((l) => [l, langLabel(l)]), none: 'Toutes', note: 'Langue originale du film.' },
   genres: { label: 'Genres', options: () => OPTIONS.genres.map((g) => [g, g]) },
