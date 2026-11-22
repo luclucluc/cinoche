@@ -729,7 +729,13 @@ let hiddenSeen = new Set(); // films masqués par les préférences dans la sél
 
 let current = { shows: [], byKey: new Map() };
 
+let renderedView = null;
 function render() {
+  // Passage Liste ↔ Carte : court fondu des résultats
+  if (renderedView && renderedView !== state.view && !reducedMotion()) {
+    $('#results').animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, easing: 'ease-out' });
+  }
+  renderedView = state.view;
   // états visuels des contrôles
   for (const b of $('#view').children) b.classList.toggle('on', b.dataset.view === state.view);
   for (const b of $('#version').children) b.classList.toggle('on', b.dataset.v === state.version);
