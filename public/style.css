@@ -318,8 +318,8 @@ main { padding: 0 var(--pad) 0 var(--gutter); min-width: 0; }
 /* Liens externes de la fiche : pastilles grises côte à côte */
 .film-side .link-pills { display: flex; flex-wrap: wrap; gap: 6px; }
 .film-side .link-pills li + li { margin-top: 0; }
-.link-pills a { display: inline-block; padding: 3px 8px; border-radius: 4px; background: var(--hair); color: var(--ink); text-decoration: none; }
-.link-pills a:hover { background: var(--faint); }
+.link-pills a, .credits a.pill-link { display: inline-block; padding: 3px 8px; border-radius: 4px; background: var(--hair); color: var(--ink); text-decoration: none; }
+.link-pills a:hover, .credits a.pill-link:hover { background: var(--faint); }
 .synopsis { font: var(--fs-text)/1.55 var(--sans); color: var(--muted); margin: 0 0 12px; max-width: 80ch; }
 .place { display: grid; grid-template-columns: minmax(180px, 260px) 1fr; gap: 12px; padding: 9px 0; border-top: 1px solid var(--hair); }
 .place-name { font: 500 var(--fs-text) var(--sans); }
@@ -367,8 +367,8 @@ select { appearance: none; border: 1px solid var(--line); background: var(--surf
 #results.map-mode .group-title:first-child { padding-top: 8px; } /* premier cinéma collé en haut */
 /* Cinéma : nom et adresse à gauche ; distance et nombre de films à droite */
 #results.map-mode .cine-item .row { grid-template-columns: minmax(0, 1fr) auto; }
-.cine-item .title .cine-addr { font: var(--fs-text) var(--sans); color: var(--muted); margin-top: 4px; }
-.cine-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; font-size: var(--fs-text); color: var(--muted); text-align: right; white-space: nowrap; }
+.cine-item .title .cine-addr { font: var(--fs-text)/1.25 var(--sans); color: var(--muted); margin-top: 1px; }
+.cine-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; line-height: 1.25; font-size: var(--fs-text); color: var(--muted); text-align: right; white-space: nowrap; }
 .cine-meta .dist { color: var(--ink); }
 #results.map-mode .row { grid-template-columns: var(--poster) minmax(0, 1fr) minmax(0, 1fr) auto; }
 #results.map-mode .row.film-row, #results.map-mode .list-head { grid-template-columns: var(--poster) minmax(0, 1fr) minmax(0, 1fr) 48px auto; }
@@ -380,6 +380,10 @@ select { appearance: none; border: 1px solid var(--line); background: var(--surf
 /* Colonne étroite : film au-dessus, horaires en ligne sur toute la largeur (comme en mode liste) */
 #results.map-mode .place { grid-template-columns: 1fr; gap: 6px; }
 #results.map-mode .day-line { grid-template-columns: 80px 1fr; }
+/* Fiche cinéma : titre du film en gras, réalisateur à droite */
+.film-line { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.film-line b { font-weight: 700; }
+.film-line span { color: var(--muted); text-align: right; }
 #results.map-mode .film-head { grid-template-columns: 1fr; }
 #results.map-mode .film-side { border-left: 0; padding-left: 0; }
 

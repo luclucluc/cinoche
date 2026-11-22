@@ -949,9 +949,9 @@ function fillDetail(li) {
     for (const s of it.shows) (byM.get(s[0]) || byM.set(s[0], []).get(s[0])).push(s);
     const films = [...byM.entries()].map(([mid, ss]) => ({ m: P.movies[mid], ss })).sort((a, b) => a.ss[0][2].localeCompare(b.ss[0][2]));
     box.innerHTML =
-      `<p class="credits"><a href="${CINE_URL(t.id)}" target="_blank" rel="noopener">Page du cinéma ↗</a>${t.screens ? ` · ${t.screens} salle${t.screens > 1 ? 's' : ''}` : ''}</p>` +
+      `<p class="credits"><a class="pill-link" href="${CINE_URL(t.id)}" target="_blank" rel="noopener">Page du cinéma ↗</a>${t.screens ? ` · ${t.screens} salle${t.screens > 1 ? 's' : ''}` : ''}</p>` +
       films
-        .map(({ m, ss }) => `<div class="place"><div class="place-name">${esc(m.title)}<small>${esc([m.directors[0], m.year].filter(Boolean).join(' · '))}</small></div>${timeChips(ss, t.id)}</div>`)
+        .map(({ m, ss }) => `<div class="place"><div class="place-name film-line"><b>${esc(m.title)}</b><span>${esc(m.directors.slice(0, 2).join(', '))}</span></div>${timeChips(ss, t.id)}</div>`)
         .join('');
   }
 }
