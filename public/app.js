@@ -1001,7 +1001,7 @@ function fillDetail(li) {
       `<ul class="credits links link-pills">${links.map((l) => `<li>${l}</li>`).join('')}</ul>` +
       `</aside></div>` +
       places
-        .map(({ t, ss }) => `<div class="place"><div class="place-name">${state.favs.has(t.id) ? '★ ' : ''}${esc(t.name)}<small>${esc(t.area)}${dist(t) != null ? ` · ${fmtDistance(dist(t))}` : ''}</small></div>${timeChips(ss, t.id)}</div>`)
+        .map(({ t, ss }) => `<div class="place"><div class="place-name">${state.favs.has(t.id) ? '★ ' : ''}${esc(t.name)}<small>${esc(t.address || t.area)}${dist(t) != null ? ` · ${fmtDistance(dist(t))}` : ''}</small><a class="pill-link route-btn" href="${routeUrl(t)}" target="_blank" rel="noopener">Itinéraire ↗</a></div>${timeChips(ss, t.id)}</div>`)
         .join('');
   } else {
     const t = it.t;
@@ -1017,20 +1017,24 @@ function fillDetail(li) {
   }
 }
 
-// La colonne d'infos du détail d'un film commence à la fin du 5e bouton de la bande des jours
-// (« mar. » dans la semaine en cours) : on mesure ce bouton et on cale la grille dessus.
+// Itinéraire Google Maps vers un cinéma (depuis la position de l'appareil)
+const routeUrl = (t) => `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent([t.name, t.address].filter(Boolean).join(", "))}`;
+
+// Les colonnes du détail d'un film s'alignent sur la ligne du film : les infos sous la
+// réalisation, les liens (Allociné…) sous l'année.
 function alignInfoCols(root = document) {
-  const ref = document.querySelectorAll('#days button')[4];
   const wide = matchMedia('(min-width: 861px)').matches && state.view !== 'map';
   for (const head of root.querySelectorAll('.film-head')) {
-    if (!wide || !ref) { head.style.gridTemplateColumns = ''; continue; }
+    const row = head.closest('.item')?.querySelector('.film-row');
+    const who = row?.querySelector('.who'), year = row?.querySelector('.year-col');
+    if (!wide || !who || !year || !year.offsetWidth) { head.style.gridTemplateColumns = ''; continue; }
     const gap = parseFloat(getComputedStyle(head).columnGap) || 0;
     const box = head.getBoundingClientRect();
-    const w = ref.getBoundingClientRect().right - box.left - gap;
-    // Les liens (Allociné…) occupent la dernière colonne de la page, alignée sur le dernier jour
-    const last = [...document.querySelectorAll('#days button')].pop();
-    const lw = last ? box.right - last.getBoundingClientRect().left : 0;
-    head.style.gridTemplateColumns = w > 200 && lw > 60 ? `${Math.round(w)}px minmax(0, 1fr) ${Math.round(lw)}px` : '';
+    const r = document.createRange(); r.selectNodeContents(year); // le texte de l'année, pas sa cellule
+    const yl = year.textContent.trim() ? r.getBoundingClientRect().left : year.getBoundingClientRect().left;
+    const x1 = who.getBoundingClientRect().left - box.left, x2 = yl - box.left;
+    const c1 = x1 - gap, c2 = x2 - x1 - gap, c3 = box.width - x2;
+    head.style.gridTemplateColumns = c1 > 200 && c2 > 80 && c3 > 60 ? `${Math.round(c1)}px ${Math.round(c2)}px ${Math.round(c3)}px` : '';
   }
 }
 window.addEventListener('resize', () => alignInfoCols());

@@ -164,6 +164,11 @@ a { color: inherit; }
 .filters .chip::after { content: '+'; font-size: 13px; }
 .filters .chip.open::after { content: '−'; }
 .pop.inline { position: static; width: auto; max-height: 420px; box-shadow: none; margin-top: -1px; border-top: 0; }
+/* Filtre déplié dans la colonne : tous les autres boutons restent visibles ; le filtre ouvert
+   prend l'espace restant et c'est sa liste qui défile (les boutons suivants restent collés en bas) */
+.sidebar > .filters > .pop.inline { flex: 0 1 auto; min-height: 140px; max-height: none; display: flex; flex-direction: column; overflow: hidden; }
+.sidebar > .filters > .pop.inline > :not(.pop-list) { flex-shrink: 0; }
+.sidebar > .filters > .pop.inline > .pop-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 /* Les filtres occupent toute la colonne : collés au bord de la fenêtre et à la ligne de droite */
 @media (min-width: 861px) {
   .side-head { padding: 0; }
@@ -335,7 +340,8 @@ main { padding: 0 var(--pad) 0 var(--gutter); min-width: 0; }
 .film-head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(160px, 220px) minmax(100px, 140px); gap: 0 32px; margin-bottom: 6px; }
 .film-side ul, .film-links ul { list-style: none; padding: 0; }
 .film-side li + li, .film-links li + li { margin-top: 3px; }
-.facts { margin: 0 0 12px; font-size: var(--fs-text); }
+.film-main .credits { color: var(--ink); } /* acteurs en noir, comme le synopsis */
+.facts { margin: 0 0 12px; font-size: var(--fs-text); color: var(--muted); }
 .credits { font-size: var(--fs-text); margin: 0 0 10px; color: var(--muted); }
 .credits a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--faint); }
 .credits a:hover { text-decoration-color: var(--ink); }
@@ -345,10 +351,12 @@ main { padding: 0 var(--pad) 0 var(--gutter); min-width: 0; }
 .film-links .link-pills li + li { margin-top: 0; }
 .link-pills a, .credits a.pill-link { display: inline-block; padding: 3px 8px; border-radius: 4px; background: var(--hair); color: var(--ink); text-decoration: none; }
 .link-pills a:hover, .credits a.pill-link:hover { background: var(--faint); }
-.synopsis { font: var(--fs-text)/1.55 var(--sans); color: var(--muted); margin: 0 0 12px; max-width: 80ch; }
+.synopsis { font: var(--fs-text)/1.55 var(--sans); color: var(--ink); margin: 0 0 12px; max-width: 80ch; }
 .place { display: grid; grid-template-columns: minmax(180px, 260px) 1fr; gap: 12px; padding: 9px 0; border-top: 1px solid var(--hair); }
 .place-name { font: 500 var(--fs-text) var(--sans); }
 .place-name small { display: block; color: var(--muted); font: var(--fs-small) var(--mono); margin-top: 2px; }
+.place-name .route-btn { display: inline-block; margin-top: 6px; padding: 3px 8px; background: var(--hair); color: var(--ink); font: var(--fs-small) var(--sans); text-decoration: none; }
+.place-name .route-btn:hover { background: var(--faint); }
 .times { display: flex; flex-wrap: wrap; gap: 6px; align-content: flex-start; }
 .day-line { display: grid; grid-template-columns: 96px 1fr; gap: 8px; align-items: baseline; padding: 2px 0; }
 .day-name { font-size: var(--fs-small); color: var(--muted); }
