@@ -420,12 +420,12 @@ main { padding: 0 var(--pad) 0 var(--gutter); min-width: 0; }
 
 /* Séances d'un film par horaire : onglets des jours, une ligne par séance, fiche au clic */
 .by-time { border-top: 1px solid var(--hair); padding-top: 10px; }
-.day-tabs { display: flex; gap: 0; margin-bottom: 6px; overflow-x: auto; }
+.day-tabs { display: flex; gap: 0; margin-bottom: 0; overflow-x: auto; }
 .day-tabs button { display: flex; flex-direction: column; align-items: flex-start; width: 70px; flex: none; padding: 5px 8px; border: 0; background: none; color: var(--muted); font: 700 18px var(--sans); line-height: 1.1; cursor: pointer; }
 .day-tabs button small { font: 500 var(--fs-small) var(--sans); text-transform: uppercase; letter-spacing: .04em; }
 .day-tabs button:hover { color: var(--ink); background: var(--hover); }
 .day-tabs button.on { color: var(--ink); background: var(--active); }
-.show-list { list-style: none; margin: 0; padding: 0; max-height: 30vh; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; } /* séances : 30vh max, défilement interne */
+.show-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--hair); max-height: 30vh; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; } /* séances : 30vh max, défilement interne */
 /* Dégradé en bas tant qu'il reste à défiler (inactif si la liste ne déborde pas) */
 @property --show-fade { syntax: '<length>'; inherits: false; initial-value: 0px; }
 .show-list { mask-image: linear-gradient(to bottom, #000 calc(100% - var(--show-fade)), transparent); animation: show-fade linear both; animation-timeline: scroll(self); }
@@ -435,7 +435,7 @@ main { padding: 0 var(--pad) 0 var(--gutter); min-width: 0; }
 .sr-time { font-weight: 700; font-variant-numeric: tabular-nums; }
 .sr-name small { margin-left: 8px; color: var(--muted); font-size: var(--fs-small); }
 .sr-tag { font-size: var(--fs-small); color: var(--muted); }
-.sr-tag.vo { color: var(--ink); font-weight: 700; }
+.sr-tag.vo { color: var(--ink); font-weight: 400; }
 .show-info { font-size: var(--fs-text); }
 .si-in { padding: 4px 8px 20px; display: grid; gap: 10px; } /* marges dans le bloc intérieur : la hauteur animée part bien de 0 */
 .place + .show-info .si-in { padding-top: 6px; }
@@ -448,7 +448,7 @@ main { padding: 0 var(--pad) 0 var(--gutter); min-width: 0; }
 .si-btn:hover { background: var(--ink); color: var(--bg); }
 .si-cards { margin: 0; color: var(--muted); font-size: var(--fs-small); }
 .time i { font-style: normal; font-size: var(--fs-small); color: var(--muted); }
-.time i.vo { color: var(--ink); font-weight: 700; }
+.time i.vo { color: var(--ink); font-weight: 400; }
 
 .empty { text-align: center; color: var(--muted); padding: 70px 0; font-size: var(--fs-text); }
 .prefs-foot { padding: 16px 20px 24px; color: var(--muted); font-size: var(--fs-small); line-height: 1.6; }
@@ -614,6 +614,8 @@ body.no-scroll { overflow: hidden; }
   .film-head, #results.map-mode .film-head { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 16px; }
   .film-main { grid-column: 1 / -1; }
   .film-side { border-left: 0; padding-left: 0; }
+  .film-links .link-pills, #results.map-mode .film-links .link-pills { align-items: flex-end; } /* liens calés à droite */
+  .si-book { order: 2; margin-left: auto; } /* fiche de séance : Réserver à droite, l'adresse à gauche */
   .place { grid-template-columns: 1fr; gap: 6px; }
     #results.map-mode { grid-template-columns: 1fr; gap: 0; margin-left: calc(-1 * var(--pad)); }
   .map-box { position: relative; top: 0; height: 52vh; min-height: 280px; border-right: 0; border-bottom: 1px solid var(--line); }
@@ -642,10 +644,11 @@ body.no-scroll { overflow: hidden; }
   }
   body.filters-open .sidebar { transform: none; visibility: visible; transition: transform .28s cubic-bezier(.2, .7, .2, 1), visibility 0s; }
   /* Fiche film : horaires d'abord, acteurs / synopsis / détails / liens derrière « Infos » */
-  .info-toggle { display: inline-flex; align-items: center; gap: 6px; margin: 2px 0 12px; padding: 3px 9px; border: 1px solid var(--muted); border-radius: 3px !important; background: transparent; color: var(--muted); font: var(--fs-small) var(--sans); }
+  .info-toggle { display: flex; align-items: center; gap: 6px; width: 100%; margin: 0; padding: 8px 0; border: 0; border-top: 1px solid var(--hair); background: none; color: var(--muted); font: var(--fs-small) var(--sans); text-align: left; }
+  .info-open > .film-head { margin-bottom: 12px; }
   .info-toggle::after { content: '▾'; font-size: 10px; transition: transform .2s; }
   .info-open > .info-toggle::after { transform: rotate(180deg); }
-  .info-toggle:hover { background: var(--hover); }
+  .info-toggle:hover { color: var(--ink); }
   .detail:not(.info-open) > .film-head { display: none; }
   .side-close { display: inline-flex; align-items: center; align-self: stretch; padding: 0 var(--pad); text-decoration: none; border-left: 1px solid var(--line); }
 }

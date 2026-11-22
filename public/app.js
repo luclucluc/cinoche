@@ -648,9 +648,18 @@ function bindControls() {
     const it = e.target.closest('.info-toggle');
     if (it) {
       e.stopPropagation();
-      const open = it.parentElement.classList.toggle('info-open');
+      // Infos du film (mobile) : dépliées / repliées en glissant
+      const box = it.parentElement, head = box.querySelector('.film-head');
+      const open = !box.classList.contains('info-open');
       it.setAttribute('aria-expanded', open);
-      if (open) requestAnimationFrame(() => alignInfoCols(it.parentElement));
+      head.getAnimations().forEach((a) => a.cancel());
+      if (open) { box.classList.add('info-open'); alignInfoCols(box); }
+      if (reducedMotion()) { if (!open) box.classList.remove('info-open'); return; }
+      const h = head.offsetHeight, mb = getComputedStyle(head).marginBottom;
+      const shut = { height: '0px', marginBottom: '0px', opacity: 0, overflow: 'hidden' };
+      const full = { height: h + 'px', marginBottom: mb, opacity: 1, overflow: 'hidden' };
+      const anim = head.animate(open ? [shut, full] : [full, shut], { duration: 260, easing: 'cubic-bezier(.2, .7, .2, 1)' });
+      if (!open) anim.onfinish = () => box.classList.remove('info-open');
       return;
     }
     const pc = e.target.closest('[data-press]');
@@ -1212,7 +1221,7 @@ function showInfo(s, x = {}) {
   return `<div class="show-info"><div class="si-in">
     ${room.length ? `<div class="si-head"><span class="si-room">${room.join(' · ')}</span></div>` : ''}
     <div class="si-actions">
-      <a class="pill-link" href="${esc(x.u || CINE_URL(t.id))}" target="_blank" rel="noopener">Réserver</a>
+      <a class="pill-link si-book" href="${esc(x.u || CINE_URL(t.id))}" target="_blank" rel="noopener">Réserver</a>
       <a class="pill-link" href="${routeUrl(t)}" target="_blank" rel="noopener">${fmtPlace(t.address || t.area)}</a>
     </div>
     ${cards.length ? `<p class="si-cards">Cartes acceptées : ${cards.map(esc).join(', ')}</p>` : ''}
