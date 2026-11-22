@@ -6,10 +6,10 @@ import { CARDS, acceptsCard } from './cards.js';
 import { CHAINS, chainOf } from './chains.js';
 import * as sync from './sync.js';
 
-// Retour du lien de connexion envoyé par e-mail (#access_token=…) : capturé avant que l'URL
-// ne soit réécrite par les filtres, puis retiré de la barre d'adresse
-const AUTH_RETURN = /access_token=/.test(location.hash) ? location.hash : null;
-if (AUTH_RETURN) history.replaceState(null, '', location.pathname + location.search);
+// Lien de synchronisation d'un autre appareil (#sync=CLÉ) : capturé avant que l'URL ne soit
+// réécrite par les filtres, puis retiré de la barre d'adresse
+const JOIN_KEY = location.hash.match(/(?:^#|&)sync=([A-Za-z0-9-]+)/)?.[1] || null;
+if (JOIN_KEY) history.replaceState(null, '', location.pathname + location.search);
 
 const $ = (s) => document.querySelector(s);
 const POSTER = (p) => (p ? `https://fr.web.img3.acsta.net/c_160_213${p}` : '');
@@ -167,8 +167,9 @@ async function init() {
     collect: () => exportPrefs().prefs,
     apply: (prefs) => replaceLocalPrefs(prefs),
     onChange: renderSync,
-    authReturn: AUTH_RETURN,
+    joinKey: JOIN_KEY,
   });
+  if (JOIN_KEY) { openPrefs(); setPrefsTab('donnees'); } // montre le résultat de la synchronisation
 }
 
 function parisNow() {
@@ -1364,19 +1365,21 @@ function renderSync(st = sync.syncState()) {
   const when = st.lastSync ? new Date(st.lastSync).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) : null;
   let html;
   if (st.mode === 'local') {
-    html = '<p class="hint">Vos préférences restent uniquement dans ce navigateur. Utilisez l’export ci-dessous pour les copier ailleurs.</p>';
+    html = '<p class="hint">Vos préférences restent uniquement dans ce navigateur.</p>';
   } else if (!st.configured) {
-    html = '<p class="hint">Les comptes ne sont pas encore activés sur ce site : vos préférences restent dans ce navigateur pour l’instant.</p>';
-  } else if (st.email) {
-    html = `<p class="hint">Connecté : <b>${esc(st.email)}</b>${when ? ` · synchronisé le ${esc(when)}` : ''}.<br />Vos préférences (y compris votre position enregistrée) suivent sur tous vos appareils.</p>
-      <div class="btns"><button class="btn" data-sync="now">Synchroniser maintenant</button><button class="btn" data-sync="logout">Se déconnecter</button><button class="btn" data-sync="delete">Supprimer mon compte</button></div>`;
-  } else if (st.linkSentTo) {
-    html = `<p class="hint">Un lien de connexion a été envoyé à <b>${esc(st.linkSentTo)}</b>. Ouvrez-le sur cet appareil pour vous connecter.</p>
-      <div class="btns"><button class="btn" data-sync="retry">Utiliser une autre adresse</button></div>`;
+    html = '<p class="hint">La synchronisation n’est pas encore activée sur ce site : vos préférences restent dans ce navigateur pour l’instant.</p>';
+  } else if (st.key) {
+    html = `<p class="hint">Compte actif${when ? ` · synchronisé le ${esc(when)}` : ''}. Vos préférences (y compris votre position enregistrée) suivent sur tous les appareils où vous utilisez cette clé.</p>
+      <div class="sync-key"><code>${esc(sync.formatKey(st.key))}</code></div>
+      <p class="hint"><b>Gardez cette clé</b> : c’est le seul moyen de retrouver vos préférences. Pour ajouter un appareil, ouvrez-y le lien ou scannez le QR code.</p>
+      <div class="btns"><button class="btn" data-sync="copy-key">Copier la clé</button><button class="btn" data-sync="copy-link">Copier le lien</button><button class="btn" data-sync="qr">QR code</button></div>
+      <div class="sync-qr" id="syncQr" hidden></div>
+      <div class="btns"><button class="btn" data-sync="now"${st.busy ? ' disabled' : ''}>${st.busy ? 'Synchronisation…' : 'Synchroniser maintenant'}</button><button class="btn" data-sync="leave">Quitter sur ce navigateur</button><button class="btn" data-sync="delete">Supprimer le compte</button></div>`;
   } else {
-    html = `<p class="hint">Recevez un lien de connexion par e-mail (sans mot de passe). Vos préférences seront retrouvées sur tous vos navigateurs et appareils.</p>
-      <form class="sync-form" id="syncForm"><input type="email" id="syncEmail" required placeholder="votre@adresse.fr" autocomplete="email" value="${esc(sync.lastEmail())}" />
-      <button class="btn" type="submit"${st.busy ? ' disabled' : ''}>${st.busy ? 'Envoi…' : 'Recevoir le lien'}</button></form>`;
+    html = `<p class="hint">Sans e-mail ni mot de passe : une <b>clé secrète</b> donne accès à vos préférences sur tous vos navigateurs et appareils.</p>
+      <div class="btns"><button class="btn" data-sync="create"${st.busy ? ' disabled' : ''}>${st.busy ? 'Création…' : 'Créer un compte'}</button></div>
+      <form class="sync-form" id="syncJoin"><input id="syncKeyInput" placeholder="J’ai déjà une clé : XXXX-XXXX-…" autocomplete="off" spellcheck="false" />
+      <button class="btn" type="submit">Utiliser</button></form>`;
   }
   box.innerHTML = html + (st.error ? `<p class="hint sync-error">${esc(st.error)}</p>` : '');
 }
@@ -1388,15 +1391,33 @@ function bindSync() {
   };
   $('#syncBody').addEventListener('submit', (e) => {
     e.preventDefault();
-    const email = $('#syncEmail').value.trim();
-    if (email) sync.sendLoginLink(email);
+    const v = $('#syncKeyInput').value.trim();
+    if (v) sync.join(v);
   });
   $('#syncBody').addEventListener('click', async (e) => {
-    const a = e.target.closest('[data-sync]')?.dataset.sync;
-    if (a === 'now') sync.syncNow();
-    if (a === 'logout') sync.signOut();
-    if (a === 'retry') { await sync.signOut(); renderSync(); }
-    if (a === 'delete' && confirm('Supprimer définitivement votre compte et les préférences enregistrées en ligne ?\nCelles de ce navigateur sont conservées.')) sync.deleteAccount();
+    const b = e.target.closest('[data-sync]');
+    if (!b) return;
+    const st = sync.syncState();
+    const flash = (txt) => { const t = b.textContent; b.textContent = txt; setTimeout(() => (b.textContent = t), 1500); };
+    switch (b.dataset.sync) {
+      case 'create': sync.createAccount(); break;
+      case 'copy-key': await navigator.clipboard?.writeText(sync.formatKey(st.key)).catch(() => {}); flash('Clé copiée'); break;
+      case 'copy-link': await navigator.clipboard?.writeText(sync.shareLink()).catch(() => {}); flash('Lien copié'); break;
+      case 'qr': {
+        const box = $('#syncQr');
+        if (!box.hidden) { box.hidden = true; break; }
+        box.innerHTML = await sync.qrSvg(sync.shareLink()).catch(() => '<p class="hint">QR code indisponible.</p>');
+        box.hidden = false;
+        break;
+      }
+      case 'now': sync.syncNow(); break;
+      case 'leave':
+        if (confirm('Quitter le compte sur ce navigateur ?\nVos préférences restent ici et en ligne ; gardez votre clé pour vous reconnecter.')) sync.leave();
+        break;
+      case 'delete':
+        if (confirm('Supprimer définitivement le compte et les préférences enregistrées en ligne, pour tous vos appareils ?\nCelles de ce navigateur sont conservées.')) sync.deleteAccount();
+        break;
+    }
   });
   renderSync();
 }

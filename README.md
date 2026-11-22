@@ -44,17 +44,14 @@ Seuls appels externes depuis le navigateur : le fond de carte OpenStreetMap, Lea
 
 Dans **Compte → Données → Stockage des préférences**, chacun choisit :
 - **Dans ce navigateur** (par défaut) : rien ne quitte le navigateur ;
-- **Compte synchronisé** : connexion par **lien envoyé par e-mail** (sans mot de passe). Les préférences suivent sur tous les navigateurs et appareils : thème, favoris, films vus, masquages, notes, boutons affichés, cartes, position…
+- **Compte synchronisé** : sans e-mail ni mot de passe, une **clé secrète** (`XXXX-XXXX-…`) donne accès aux préférences sur tous les navigateurs et appareils : thème, favoris, films vus, masquages, notes, boutons affichés, cartes, position…
+  - *Créer un compte* génère la clé ; on l'ajoute sur un autre appareil en la saisissant, en ouvrant le lien `#sync=…` ou en scannant le QR code ;
+  - la version la plus récente l'emporte, et chaque modification est envoyée quelques secondes plus tard ;
+  - *Quitter sur ce navigateur* ou *Supprimer le compte* (suppression en ligne, pour tous les appareils).
 
-La synchronisation repose sur [Supabase](https://supabase.com) (offre gratuite). La version la plus récente l'emporte, et chaque modification est envoyée quelques secondes plus tard. On peut se déconnecter ou supprimer son compte depuis le même écran.
-
-Mise en place, à faire une seule fois :
-1. Créer un projet sur supabase.com, de préférence avec une région européenne (Paris : `eu-west-3`).
-2. Ouvrir *SQL Editor*, coller le contenu de [supabase/schema.sql](supabase/schema.sql) et cliquer sur *Run*. Cela crée la table `preferences`, protégée pour que chacun ne voie que sa ligne.
-3. Dans *Authentication → URL Configuration*, mettre `https://luclucluc.github.io/paris-cine/` en *Site URL* et dans les *Redirect URLs*.
-4. Dans *Project Settings → API*, copier la **Project URL** et la clé **anon / publishable** dans [public/config.js](public/config.js). Cette clé est publique par conception : la protection vient des règles d'accès.
-
-Tant que `public/config.js` est vide, le site fonctionne uniquement en mode « ce navigateur ».
+Stockage : un **Cloudflare Worker + KV** ([worker/](worker/)), qui garde un document JSON par clé. La clé n'est jamais stockée en clair : l'entrée porte son empreinte SHA-256. Le worker n'accepte que les requêtes du site.
+- Adresse : `https://paris-cine-sync.cine-infos.workers.dev`, configurée dans [public/config.js](public/config.js).
+- Déploiement : automatique par [.github/workflows/worker.yml](.github/workflows/worker.yml) à chaque modification de `worker/`. Il utilise les secrets GitHub `CLOUDFLARE_API_TOKEN` (permissions : Workers Scripts Edit, Workers KV Storage Edit, Account Settings Read, User Details Read, Memberships Read) et `CLOUDFLARE_ACCOUNT_ID`.
 
 ## Données
 

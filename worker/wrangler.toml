@@ -1,0 +1,10 @@
+# Paris Ciné — synchronisation des préférences (Cloudflare Worker + KV)
+# Déployé automatiquement par .github/workflows/worker.yml
+name = "paris-cine-sync"
+main = "src/index.js"
+compatibility_date = "2026-11-01"
+workers_dev = true
+
+[[kv_namespaces]]
+binding = "PREFS"
+id = "c3ea83ca2fab454c982ba45de7e6e771"
