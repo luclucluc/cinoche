@@ -446,7 +446,6 @@ main { padding: 0 var(--pad) 0 var(--gutter); min-width: 0; }
 .time i.vo { color: var(--ink); font-weight: 700; }
 
 .empty { text-align: center; color: var(--muted); padding: 70px 0; font-size: var(--fs-text); }
-.empty::before { content: '+'; display: block; font-size: 48px; font-weight: 200; color: var(--ink); margin-bottom: 10px; }
 .prefs-foot { padding: 16px 20px 24px; color: var(--muted); font-size: var(--fs-small); line-height: 1.6; }
 
 /* ---------- Position & carte ---------- */
