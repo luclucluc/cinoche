@@ -420,10 +420,9 @@ main { padding: 0 var(--pad) 0 var(--gutter); min-width: 0; }
 .day-tabs button small { font: 500 var(--fs-small) var(--sans); text-transform: uppercase; letter-spacing: .04em; }
 .day-tabs button:hover { color: var(--ink); background: var(--hover); }
 .day-tabs button.on { color: var(--ink); background: var(--active); }
-.show-list { list-style: none; margin: 0; padding: 0; }
+.show-list { list-style: none; margin: 0; padding: 0; max-height: 30vh; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; } /* séances : 30vh max, défilement interne */
 .show-row { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; gap: 14px; align-items: baseline; width: 100%; padding: 7px 8px; border: 0; border-top: 1px solid var(--hair); background: none; color: var(--ink); font: var(--fs-text) var(--sans); text-align: left; cursor: pointer; }
 .show-list > li:first-child .show-row { border-top: 0; }
-.show-row:hover, .show-row.picked { background: var(--bg); }
 .sr-time { font-weight: 700; font-variant-numeric: tabular-nums; }
 .sr-name small { margin-left: 8px; color: var(--muted); font-size: var(--fs-small); }
 .sr-tag { font-size: var(--fs-small); color: var(--muted); }

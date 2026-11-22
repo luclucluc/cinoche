@@ -9,6 +9,8 @@
 //
 // Résultat : public/data/seances.json  { "<film>|<cinéma>|<AAAA-MM-JJTHH:MM>|<VO|VF>": { u, r?, c?, e?, ce? } }
 //   u : lien de réservation · r : salle · c : places · ce : 1 si la capacité est estimée · e : heure de fin
+//   s : taille de l'écran
+// Les places et tailles d'écran saisies à la main dans scraper/salles.json complètent (et priment sur) ces données.
 
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
@@ -17,6 +19,10 @@ import { fileURLToPath } from 'node:url';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'public', 'data', 'seances.json');
 const UGC_CACHE = join(ROOT, '.cache', 'ugc-rooms.json');
+const ROOMS = join(ROOT, 'scraper', 'salles.json');
+
+// Nom de salle comparable : « SALLE 4 », « Salle 4 » et « salle  4 » sont la même salle
+export const roomKey = (r) => String(r || '').trim().toLowerCase().replace(/\s+/g, ' ');
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36';
 const ZIPS = /^(75|92|93|94)/;
 
@@ -143,8 +149,9 @@ export async function fetchSeances(tickets, dates) {
     mk2Rooms().catch((err) => (console.warn(`  ✗ MK2 : ${err.message}`), new Map())),
     ugcRooms(ugcIds).catch((err) => (console.warn(`  ✗ UGC : ${err.message}`), new Map())),
   ]);
+  const table = JSON.parse(await readFile(ROOMS, 'utf8').catch(() => '{}'));
   const out = {};
-  let rooms = 0;
+  let rooms = 0, manual = 0;
   for (const [key, u] of tickets) {
     const e = { u };
     let extra = null;
@@ -155,9 +162,16 @@ export async function fetchSeances(tickets, dates) {
     const ug = u.match(/ugc\.fr\/reservationSeances\.html\?id=(\d+)/)?.[1];
     if (ug) extra = ugc.get(ug);
     if (extra) { for (const [k, v] of Object.entries(extra)) if (v !== undefined) e[k] = v; rooms++; }
+    // Table saisie à la main (scraper/salles.json) : { <cinéma>: { <salle>: { places, ecran } } }
+    const known = e.r && Object.entries(table[key.split('|')[1]] || {}).find(([name]) => roomKey(name) === roomKey(e.r))?.[1];
+    if (known && (known.places || known.ecran)) {
+      if (known.places) { e.c = known.places; delete e.ce; }
+      if (known.ecran) e.s = known.ecran;
+      manual++;
+    }
     out[key] = e;
   }
   await mkdir(dirname(OUT), { recursive: true });
   await writeFile(OUT, JSON.stringify(out));
-  console.log(`▸ Détails des séances : ${Object.keys(out).length} liens de réservation, ${rooms} avec la salle`);
+  console.log(`▸ Détails des séances : ${Object.keys(out).length} liens de réservation, ${rooms} avec la salle, ${manual} complétées par scraper/salles.json`);
 }

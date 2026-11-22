@@ -1116,16 +1116,15 @@ let SEANCES = null;
 const loadSeances = () => (SEANCES ??= fetch('data/seances.json', { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : {})).catch(() => ({})));
 
 function showInfo(s, x = {}) {
-  const t = P.theaters[s[1]], m = P.movies[s[0]], d = dist(t);
-  const room = [x.r && esc(x.r), x.c && `${x.ce ? '≈ ' : ''}${x.c} places`, x.e && `fin vers ${x.e}`].filter(Boolean);
-  const when = new Date(s[2] + ':00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  // film, date, heure, version, cinéma et durée sont déjà affichés autour : on ne les répète pas
+  const t = P.theaters[s[1]];
+  const room = [x.r && esc(x.r), x.c && `${x.ce ? '≈ ' : ''}${x.c} places`, x.s && `écran ${esc(x.s)}`, x.e && `fin vers ${x.e}`].filter(Boolean);
   const cards = CARDS.filter((c) => acceptsCard(c, t, P.cards)).map((c) => c.label);
   return `<div class="show-info">
-    <div class="si-head"><b>${esc(t.name)}</b><span>${esc(when)} · ${s[2].slice(11)} · ${esc(tagOf(s))}</span><span class="si-film">${esc(m.title)}${m.runtime ? ` · ${esc(m.runtime)}` : ''}</span>${room.length ? `<span class="si-room">${room.join(' · ')}</span>` : ''}</div>
+    ${room.length ? `<div class="si-head"><span class="si-room">${room.join(' · ')}</span></div>` : ''}
     <div class="si-actions">
-      <button class="si-btn" data-ics="${showKey(s)}">Ajouter au calendrier</button>
-      <a class="si-btn" href="${esc(x.u || CINE_URL(t.id))}" target="_blank" rel="noopener">Réserver</a>
-      <a class="si-btn" href="${routeUrl(t)}" target="_blank" rel="noopener">${fmtPlace(t.address || t.area)}${d != null ? ` · ${fmtDistance(d)}` : ''}</a>
+      <a class="pill-link" href="${esc(x.u || CINE_URL(t.id))}" target="_blank" rel="noopener">Réserver</a>
+      <a class="pill-link" href="${routeUrl(t)}" target="_blank" rel="noopener">${fmtPlace(t.address || t.area)}</a>
     </div>
     ${cards.length ? `<p class="si-cards">Cartes acceptées : ${cards.map(esc).join(', ')}</p>` : ''}
     ${t.screens ? `<p class="si-cards">${t.screens} salle${t.screens > 1 ? 's' : ''}</p>` : ''}
