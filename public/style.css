@@ -379,7 +379,7 @@ select { appearance: none; border: 1px solid var(--line); background: var(--surf
 #results.map-mode .group-title { margin: 0; padding: 18px 16px 6px; }
 #results.map-mode .group-title:first-child { padding-top: 8px; } /* premier cinéma collé en haut */
 /* Cinéma ouvert : son nom reste visible en haut pendant qu'on parcourt ses films */
-#results.map-mode .cine-item.open > .row { position: sticky; top: var(--header-h, 0px); z-index: 2; background: var(--active); border-bottom: 1px solid var(--hair); }
+#results.map-mode .cine-item.open > .row { position: sticky; top: var(--header-h, 0px); z-index: 2; background: var(--active); } /* pas de ligne sous le titre du cinéma ouvert */
 /* Cinéma : nom et adresse à gauche ; distance et nombre de films à droite */
 #results.map-mode .cine-item .row { grid-template-columns: minmax(0, 1fr) auto; }
 .cine-item .title .cine-addr { font: var(--fs-text)/1.25 var(--sans); color: var(--muted); margin-top: 1px; }
