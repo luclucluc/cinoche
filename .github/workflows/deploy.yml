@@ -36,6 +36,7 @@ jobs:
             mkdir -p public/data
             BASE="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/data"
             curl -sf "$BASE/press.json" -o public/data/press.json || true
+            curl -sf "$BASE/seances.json" -o public/data/seances.json || true
             if curl -sf "$BASE/programme.json" -o public/data/programme.json; then
               echo "Données en ligne réutilisées"; echo "scrape=false" >> "$GITHUB_OUTPUT"; exit 0
             fi

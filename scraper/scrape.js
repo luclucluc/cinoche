@@ -14,6 +14,7 @@ import { addRatings } from './ratings.js';
 import { cinechequeTheaters } from './cinecheque.js';
 import { addFullCast } from './cast.js';
 import { fetchPress } from './press.js';
+import { fetchSeances, ticketOf } from './seances.js';
 
 const BASE = 'https://www.allocine.fr';
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36';
@@ -272,6 +273,7 @@ async function main() {
 
   const movies = {};
   const showtimes = [];
+  const tickets = new Map(); // séance → lien de réservation directe
   const active = new Set();
   let done = 0;
 
@@ -283,7 +285,10 @@ async function main() {
       for (const s of Object.values(groups || {}).flat()) {
         if (!s?.startsAt) continue;
         // 6e champ (facultatif) : 1 si Allociné marque la séance comme avant-première
-        showtimes.push([mid, id, s.startsAt.slice(0, 16), versionOf(s, movies[mid]), formatOf(s), ...(s.isPreview ? [1] : [])]);
+        const row = [mid, id, s.startsAt.slice(0, 16), versionOf(s, movies[mid]), formatOf(s), ...(s.isPreview ? [1] : [])];
+        showtimes.push(row);
+        const u = ticketOf(s);
+        if (u) tickets.set(row.slice(0, 4).join('|'), u);
         active.add(id);
       }
     }
@@ -305,6 +310,7 @@ async function main() {
       safe('Notes IMDb/Letterboxd/RT/Metacritic', addRatings(movies)),
       safe('Distributions', addFullCast(movies)),
       safe('Critiques presse', fetchPress(movies)),
+      safe('Détails des séances', fetchSeances(tickets, dates)),
     ]);
   }
 

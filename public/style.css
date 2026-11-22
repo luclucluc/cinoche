@@ -433,6 +433,7 @@ main { padding: 0 var(--pad) 0 var(--gutter); min-width: 0; }
 .si-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .si-btn { display: inline-flex; align-items: center; padding: 6px 12px; border: 1px solid var(--ink); background: none; color: var(--ink); font: var(--fs-text) var(--sans); text-decoration: none; cursor: pointer; }
 .si-btn:hover { background: var(--ink); color: var(--bg); }
+.si-room { flex-basis: 100%; color: var(--ink) !important; font-weight: 700; }
 .si-cards { margin: 0; color: var(--muted); font-size: var(--fs-small); }
 .time i { font-style: normal; font-size: var(--fs-small); color: var(--muted); }
 .time i.vo { color: var(--ink); font-weight: 700; }

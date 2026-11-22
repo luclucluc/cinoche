@@ -1111,15 +1111,20 @@ function showsByTime(shows, day) {
 }
 
 // Fiche d'une séance : calendrier, réservation, adresse / itinéraire, cartes acceptées
-function showInfo(s) {
+// Détails des séances (data/seances.json : lien de réservation, salle, places, fin), chargés au premier clic
+let SEANCES = null;
+const loadSeances = () => (SEANCES ??= fetch('data/seances.json', { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : {})).catch(() => ({})));
+
+function showInfo(s, x = {}) {
   const t = P.theaters[s[1]], m = P.movies[s[0]], d = dist(t);
+  const room = [x.r && esc(x.r), x.c && `${x.ce ? '≈ ' : ''}${x.c} places`, x.e && `fin vers ${x.e}`].filter(Boolean);
   const when = new Date(s[2] + ':00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
   const cards = CARDS.filter((c) => acceptsCard(c, t, P.cards)).map((c) => c.label);
   return `<div class="show-info">
-    <div class="si-head"><b>${esc(t.name)}</b><span>${esc(when)} · ${s[2].slice(11)} · ${esc(tagOf(s))}</span><span class="si-film">${esc(m.title)}${m.runtime ? ` · ${esc(m.runtime)}` : ''}</span></div>
+    <div class="si-head"><b>${esc(t.name)}</b><span>${esc(when)} · ${s[2].slice(11)} · ${esc(tagOf(s))}</span><span class="si-film">${esc(m.title)}${m.runtime ? ` · ${esc(m.runtime)}` : ''}</span>${room.length ? `<span class="si-room">${room.join(' · ')}</span>` : ''}</div>
     <div class="si-actions">
       <button class="si-btn" data-ics="${showKey(s)}">Ajouter au calendrier</button>
-      <a class="si-btn" href="${CINE_URL(t.id)}" target="_blank" rel="noopener">Réserver</a>
+      <a class="si-btn" href="${esc(x.u || CINE_URL(t.id))}" target="_blank" rel="noopener">Réserver</a>
       <a class="si-btn" href="${routeUrl(t)}" target="_blank" rel="noopener">${fmtPlace(t.address || t.area)}${d != null ? ` · ${fmtDistance(d)}` : ''}</a>
     </div>
     ${cards.length ? `<p class="si-cards">Cartes acceptées : ${cards.map(esc).join(', ')}</p>` : ''}
@@ -1128,16 +1133,19 @@ function showInfo(s) {
 }
 
 // Ouvre / ferme la fiche sous la séance cliquée (une seule fiche par détail)
-function toggleShowInfo(btn) {
+async function toggleShowInfo(btn) {
   const box = btn.closest('.detail');
   const anchor = btn.closest('.show-list > li') || btn.closest('.place') || btn;
   const was = anchor.nextElementSibling?.classList.contains('show-info') && anchor.nextElementSibling.dataset.show === btn.dataset.show;
   box.querySelectorAll('.show-info').forEach((x) => x.remove());
   box.querySelectorAll('.picked').forEach((x) => x.classList.remove('picked'));
   if (was) return;
-  anchor.insertAdjacentHTML('afterend', showInfo(parseShow(btn.dataset.show)));
-  anchor.nextElementSibling.dataset.show = btn.dataset.show;
   btn.classList.add('picked');
+  const s = parseShow(btn.dataset.show);
+  const x = (await loadSeances())[s.slice(0, 4).join('|')] || {};
+  if (!btn.classList.contains('picked') || !btn.isConnected) return; // refermée ou remplacée entre-temps
+  anchor.insertAdjacentHTML('afterend', showInfo(s, x));
+  anchor.nextElementSibling.dataset.show = btn.dataset.show;
 }
 
 // Fichier .ics (heure de Paris) pour ajouter la séance à son agenda
