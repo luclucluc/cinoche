@@ -628,7 +628,7 @@ body.no-scroll { overflow: hidden; }
   .top { flex-wrap: wrap; }
   .days { order: 3; flex-basis: 100%; }
   .days button { border-top: 0; } /* le filet du dessus est celui de la recherche */
-  .burger { order: 1; display: flex; align-items: center; justify-content: center; flex: none; width: 46px; height: 40px; padding: 0; border: 0; border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+  .burger { order: 1; display: flex; align-items: center; justify-content: center; flex: none; width: 46px; height: var(--subhead-h); padding: 0; border: 0; border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
   .burger:hover, body.filters-open .burger { background: var(--hover); }
   .top-account { order: 2; border-right: 0; border-left: 1px solid var(--line); }
   body.filters-open .top-account { background: var(--bg); }
@@ -637,7 +637,7 @@ body.no-scroll { overflow: hidden; }
   .top-fav.on { background: var(--active); }
   .top-fav.on svg { fill: currentColor; }
   .side-actions { display: none !important; } /* Favoris, Films vus et Compte : dans la barre du haut sur mobile */
-  .search { order: 2; flex: 1; width: auto; height: 40px; padding-left: 12px; border-right: 0; border-top: 0; }
+  .search { order: 2; flex: 1; width: auto; height: var(--subhead-h); padding-left: 12px; border-right: 0; border-top: 0; }
   .results-bar { display: none; } /* le bouton Filtres est remplacé par le burger */
   .layout { display: block; }
   main { padding-left: var(--pad); }
@@ -658,6 +658,7 @@ body.no-scroll { overflow: hidden; }
   .info-open > .info-toggle::after { transform: rotate(180deg); }
   .info-toggle:hover { color: var(--ink); }
   .detail:not(.info-open) > .film-head { display: none; }
+  .detail:not(.info-open) > .by-time { padding-top: 0; } /* même espace sous « Infos » qu'au-dessus */
   /* Croix à gauche, à l'emplacement du burger qui ouvre le menu */
   .side-head { gap: 0; }
   .side-close { order: -1; display: inline-flex; align-items: center; justify-content: center; align-self: stretch; flex: none; width: 46px; padding: 0; text-decoration: none; border-right: 1px solid var(--line); }
