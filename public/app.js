@@ -621,8 +621,13 @@ function bindControls() {
   document.addEventListener('click', () => popKey && closePop());
   window.addEventListener('resize', () => popKey && !$('#pop').classList.contains('inline') && closePop());
   // Colonne de filtres sur mobile
-  $('#filtersToggle').onclick = () => document.body.classList.toggle('filters-open');
-  $('#sideClose').onclick = () => document.body.classList.remove('filters-open');
+  const setFiltersOpen = (open) => {
+    document.body.classList.toggle('filters-open', open);
+    $('#burgerBtn').setAttribute('aria-expanded', open);
+  };
+  $('#filtersToggle').onclick = () => setFiltersOpen(!document.body.classList.contains('filters-open'));
+  $('#burgerBtn').onclick = () => setFiltersOpen(!document.body.classList.contains('filters-open'));
+  $('#sideClose').onclick = () => setFiltersOpen(false);
 
   let t;
   // Croix d'effacement maison (même ⓧ et même retrait à droite que « Filtres »)
