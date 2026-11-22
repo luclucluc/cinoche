@@ -126,6 +126,8 @@ let OPTIONS = {}; // valeurs possibles des filtres multiples
 init();
 
 async function init() {
+  stripHover();
+  addEventListener('load', stripHover); // feuilles chargées plus tard (carte)
   applyTheme(store.get('theme', null));
   // hauteurs exactes (au dixième de pixel, pas arrondies) : la colonne et les en-têtes s'accrochent pile sous l'en-tête
   const exactH = (e) => (e.borderBoxSize?.[0]?.blockSize ?? e.target.getBoundingClientRect().height) + 'px';
@@ -460,6 +462,31 @@ function slideDetail(el, open, done) {
 // Dépliage / repliage en douceur des filtres de la colonne
 const SLIDE_MS = 250;
 const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// Écrans tactiles : pas d'effets de survol (ils restent « collés » après un appui).
+// On retire « :hover » de toutes les règles CSS chargées ; les autres sélecteurs d'une même règle sont gardés.
+function stripHover() {
+  if (!matchMedia('(hover: none)').matches) return;
+  const split = (sel) => { // découpe aux virgules de premier niveau (pas celles de :is(…), :not(…))
+    const out = []; let depth = 0, cur = '';
+    for (const ch of sel) {
+      if (ch === '(') depth++; else if (ch === ')') depth--;
+      if (ch === ',' && !depth) { out.push(cur); cur = ''; } else cur += ch;
+    }
+    return [...out, cur].map((x) => x.trim()).filter(Boolean);
+  };
+  const walk = (list) => {
+    for (let i = list.length - 1; i >= 0; i--) {
+      const r = list[i];
+      if (r.selectorText?.includes(':hover')) {
+        const keep = split(r.selectorText).filter((x) => !x.includes(':hover'));
+        if (keep.length) r.selectorText = keep.join(', ');
+        else (r.parentRule || r.parentStyleSheet).deleteRule(i);
+      } else if (r.cssRules) walk(r.cssRules);
+    }
+  };
+  for (const sh of document.styleSheets) { try { walk(sh.cssRules); } catch { /* feuille d'un autre domaine */ } }
+}
 function slide(el, dir, done) {
   if (reducedMotion()) return done?.();
   const full = el.getBoundingClientRect().height;
