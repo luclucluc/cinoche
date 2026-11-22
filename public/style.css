@@ -406,7 +406,33 @@ main { padding: 0 var(--pad) 0 var(--gutter); min-width: 0; }
 /* Horaires : pastille grise sans contour, un peu plus foncée au survol */
 .time { display: inline-flex; align-items: baseline; gap: 8px; padding: 4px 9px; border: 0; color: var(--ink); font-size: var(--fs-text); font-variant-numeric: tabular-nums; text-decoration: none; --time-bg: color-mix(in srgb, var(--hair) 55%, var(--surface)); background: var(--time-bg); transition: background-color .3s ease; }
 :root[data-theme='dark'] .time { --time-bg: #2a2a2a; } /* visible sur le fond du détail ouvert */
-a.time:hover { background: color-mix(in srgb, var(--time-bg), #000 12%); color: var(--ink); }
+.time { font-family: inherit; cursor: pointer; }
+.time:hover, .time.picked { background: color-mix(in srgb, var(--time-bg), #000 12%); color: var(--ink); }
+
+/* Séances d'un film par horaire : onglets des jours, une ligne par séance, fiche au clic */
+.by-time { border-top: 1px solid var(--hair); padding-top: 10px; }
+.day-tabs { display: flex; gap: 0; margin-bottom: 6px; overflow-x: auto; }
+.day-tabs button { display: flex; flex-direction: column; align-items: center; min-width: 52px; padding: 5px 8px; border: 0; background: none; color: var(--muted); font: 700 18px var(--sans); line-height: 1.1; cursor: pointer; }
+.day-tabs button small { font: 500 var(--fs-small) var(--sans); text-transform: uppercase; letter-spacing: .04em; }
+.day-tabs button:hover { color: var(--ink); background: var(--hover); }
+.day-tabs button.on { color: var(--ink); background: var(--active); }
+.show-list { list-style: none; margin: 0; padding: 0; }
+.show-row { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; gap: 14px; align-items: baseline; width: 100%; padding: 7px 8px; border: 0; border-top: 1px solid var(--hair); background: none; color: var(--ink); font: var(--fs-text) var(--sans); text-align: left; cursor: pointer; }
+.show-list > li:first-child .show-row { border-top: 0; }
+.show-row:hover, .show-row.picked { background: var(--bg); }
+.sr-time { font-weight: 700; font-variant-numeric: tabular-nums; }
+.sr-name small { margin-left: 8px; color: var(--muted); font-size: var(--fs-small); }
+.sr-tag { font-size: var(--fs-small); color: var(--muted); }
+.sr-tag.vo { color: var(--ink); font-weight: 700; }
+.show-info { margin: 0 0 8px; padding: 12px 14px; background: var(--bg); display: grid; gap: 10px; font-size: var(--fs-text); }
+.place + .show-info { margin-top: 2px; }
+.si-head { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }
+.si-head span { color: var(--muted); }
+.si-film { flex-basis: 100%; }
+.si-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.si-btn { display: inline-flex; align-items: center; padding: 6px 12px; border: 1px solid var(--ink); background: none; color: var(--ink); font: var(--fs-text) var(--sans); text-decoration: none; cursor: pointer; }
+.si-btn:hover { background: var(--ink); color: var(--bg); }
+.si-cards { margin: 0; color: var(--muted); font-size: var(--fs-small); }
 .time i { font-style: normal; font-size: var(--fs-small); color: var(--muted); }
 .time i.vo { color: var(--ink); font-weight: 700; }
 

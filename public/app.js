@@ -108,6 +108,7 @@ const state = {
   open: new Set(),
   geo: store.get('geo', null), // { lat, lon, label } — reste dans ce navigateur
   radius: store.get('radius', 2000),
+  showOrder: store.get('showOrder', 'time'), // séances d'un film : 'time' (par horaire) ou 'cinema'
   selected: null,
 };
 
@@ -636,6 +637,17 @@ function bindControls() {
     const pc = e.target.closest('[data-press]');
     if (pc) { e.stopPropagation(); openPress(pc.dataset.press); return; }
     const mfav = e.target.closest('.mfav');
+    const ics = e.target.closest('[data-ics]');
+    if (ics) { e.stopPropagation(); downloadIcs(parseShow(ics.dataset.ics)); return; }
+    const sh = e.target.closest('[data-show]');
+    if (sh && !sh.classList.contains('show-info')) { e.stopPropagation(); toggleShowInfo(sh); return; }
+    const dayTab = e.target.closest('[data-show-day]');
+    if (dayTab) {
+      e.stopPropagation();
+      const li = dayTab.closest('.item'), it = current.byKey.get(li.dataset.key);
+      dayTab.closest('.by-time').outerHTML = showsByTime(it.shows, dayTab.dataset.showDay);
+      return;
+    }
     if (mfav) {
       e.stopPropagation();
       // Cycle : rien → favori → vu → rien
@@ -1003,7 +1015,7 @@ function theaterRow(key, t, shows) {
 
 function chip(s, tid) {
   const tag = [s[3], ...formatsOf(s).map((f) => FORMAT_LABEL[f] || f)].join(' ');
-  return `<a class="time" href="${CINE_URL(tid)}" target="_blank" rel="noopener" title="${esc(tag)}">${s[2].slice(11)}<i class="${s[3] === 'VO' ? 'vo' : ''}">${esc(tag)}</i></a>`;
+  return `<button class="time" data-show="${showKey(s)}" title="${esc(tag)}">${s[2].slice(11)}<i class="${s[3] === 'VO' ? 'vo' : ''}">${esc(tag)}</i></button>`;
 }
 
 // Horaires ; en mode semaine, regroupés par jour
@@ -1053,9 +1065,9 @@ function fillDetail(li) {
       `</aside><aside class="film-links">` +
       `<ul class="credits links link-pills">${links.map((l) => `<li>${l}</li>`).join('')}</ul>` +
       `</aside></div>` +
-      places
+      (state.showOrder === 'time' ? showsByTime(it.shows) : places
         .map(({ t, ss }) => `<div class="place"><div class="place-name">${state.favs.has(t.id) ? '★ ' : ''}${esc(t.name)}<small>${fmtPlace(t.address || t.area)}${dist(t) != null ? ` · ${fmtDistance(dist(t))}` : ''}</small><a class="pill-link route-btn" href="${routeUrl(t)}" target="_blank" rel="noopener">Itinéraire</a></div>${timeChips(ss, t.id)}</div>`)
-        .join('');
+        .join(''));
   } else {
     const t = it.t;
     const byM = new Map();
@@ -1071,6 +1083,84 @@ function fillDetail(li) {
 }
 
 // Itinéraire Google Maps vers un cinéma (depuis la position de l'appareil)
+// ------------------------------------------------------------------ Séances par horaire et fiche d'une séance
+
+const showKey = (s) => esc([s[0], s[1], s[2], s[3], s[4] || ''].join('~'));
+const parseShow = (k) => { const [m, t, dt, v, f] = k.split('~'); return [m, t, dt, v, f || null]; };
+const tagOf = (s) => [s[3], ...formatsOf(s).map((f) => FORMAT_LABEL[f] || f)].join(' ');
+
+// Liste chronologique (une ligne par séance) ; en mode semaine, un onglet par jour
+function showsByTime(shows, day) {
+  const days = [...new Set(shows.map((s) => s[2].slice(0, 10)))].sort();
+  day = days.includes(day) ? day : days[0];
+  const rank = (s) => [!state.favs.has(s[1]), dist(P.theaters[s[1]]) ?? 1e9];
+  const list = shows.filter((s) => s[2].startsWith(day)).sort((a, b) => {
+    const ra = rank(a), rb = rank(b);
+    return a[2].localeCompare(b[2]) || ra[0] - rb[0] || ra[1] - rb[1] || P.theaters[a[1]].name.localeCompare(P.theaters[b[1]].name, 'fr');
+  });
+  const tabs = days.length > 1
+    ? `<div class="day-tabs" role="tablist">${days.map((d) => {
+        const dt = new Date(d + 'T12:00:00');
+        return `<button role="tab" data-show-day="${d}" class="${d === day ? 'on' : ''}" aria-selected="${d === day}"><small>${esc(dt.toLocaleDateString('fr-FR', { weekday: 'short' }).replace('.', ''))}</small>${dt.getDate()}</button>`;
+      }).join('')}</div>`
+    : '';
+  return `<div class="by-time">${tabs}<ul class="show-list">${list.map((s) => {
+    const t = P.theaters[s[1]], d = dist(t);
+    return `<li><button class="show-row" data-show="${showKey(s)}"><span class="sr-time">${s[2].slice(11)}</span><span class="sr-name">${state.favs.has(t.id) ? '★ ' : ''}${esc(t.name)}<small>${fmtPlace(t.area)}${d != null ? ` · ${fmtDistance(d)}` : ''}</small></span><span class="sr-tag${s[3] === 'VO' ? ' vo' : ''}">${esc(tagOf(s))}</span></button></li>`;
+  }).join('')}</ul></div>`;
+}
+
+// Fiche d'une séance : calendrier, réservation, adresse / itinéraire, cartes acceptées
+function showInfo(s) {
+  const t = P.theaters[s[1]], m = P.movies[s[0]], d = dist(t);
+  const when = new Date(s[2] + ':00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  const cards = CARDS.filter((c) => acceptsCard(c, t, P.cards)).map((c) => c.label);
+  return `<div class="show-info">
+    <div class="si-head"><b>${esc(t.name)}</b><span>${esc(when)} · ${s[2].slice(11)} · ${esc(tagOf(s))}</span><span class="si-film">${esc(m.title)}${m.runtime ? ` · ${esc(m.runtime)}` : ''}</span></div>
+    <div class="si-actions">
+      <button class="si-btn" data-ics="${showKey(s)}">Ajouter au calendrier</button>
+      <a class="si-btn" href="${CINE_URL(t.id)}" target="_blank" rel="noopener">Réserver</a>
+      <a class="si-btn" href="${routeUrl(t)}" target="_blank" rel="noopener">${fmtPlace(t.address || t.area)}${d != null ? ` · ${fmtDistance(d)}` : ''}</a>
+    </div>
+    ${cards.length ? `<p class="si-cards">Cartes acceptées : ${cards.map(esc).join(', ')}</p>` : ''}
+    ${t.screens ? `<p class="si-cards">${t.screens} salle${t.screens > 1 ? 's' : ''}</p>` : ''}
+  </div>`;
+}
+
+// Ouvre / ferme la fiche sous la séance cliquée (une seule fiche par détail)
+function toggleShowInfo(btn) {
+  const box = btn.closest('.detail');
+  const anchor = btn.closest('.show-list > li') || btn.closest('.place') || btn;
+  const was = anchor.nextElementSibling?.classList.contains('show-info') && anchor.nextElementSibling.dataset.show === btn.dataset.show;
+  box.querySelectorAll('.show-info').forEach((x) => x.remove());
+  box.querySelectorAll('.picked').forEach((x) => x.classList.remove('picked'));
+  if (was) return;
+  anchor.insertAdjacentHTML('afterend', showInfo(parseShow(btn.dataset.show)));
+  anchor.nextElementSibling.dataset.show = btn.dataset.show;
+  btn.classList.add('picked');
+}
+
+// Fichier .ics (heure de Paris) pour ajouter la séance à son agenda
+function downloadIcs(s) {
+  const t = P.theaters[s[1]], m = P.movies[s[0]];
+  const rt = /(\d+)\s*h\s*(\d+)?/.exec(m.runtime || '');
+  const mins = rt ? +rt[1] * 60 + (+rt[2] || 0) : 120;
+  const start = s[2].replace(/[-:]/g, '') + '00';
+  const endD = new Date(new Date(s[2] + ':00Z').getTime() + (mins + 20) * 6e4); // + bandes-annonces
+  const end = endD.toISOString().slice(0, 16).replace(/[-:]/g, '') + '00';
+  const x = (v) => String(v).replace(/[\;,]/g, (c) => '\\' + c).replace(/\n/g, '\\n');
+  const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Paris Cine//FR', 'BEGIN:VEVENT',
+    `UID:${s[0]}-${s[1]}-${start}@paris-cine`, `DTSTAMP:${new Date().toISOString().replace(/[-:]|\.\d+/g, '')}`,
+    `DTSTART;TZID=Europe/Paris:${start}`, `DTEND;TZID=Europe/Paris:${end}`,
+    `SUMMARY:${x(`${m.title} (${tagOf(s)})`)}`, `LOCATION:${x([t.name, t.address].filter(Boolean).join(', '))}`,
+    `URL:${CINE_URL(t.id)}`, 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' }));
+  a.download = `${m.title.replace(/[^\p{L}\p{N} -]/gu, '').trim() || 'seance'}.ics`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
 const routeUrl = (t) => `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent([t.name, t.address].filter(Boolean).join(", "))}`;
 
 // Les colonnes du détail d'un film s'alignent sur la ligne du film : les infos sous la
@@ -1374,6 +1464,7 @@ function renderPrefs() {
   const pref = store.get('theme', null) || '';
   for (const b of $('#themeSeg').children) b.classList.toggle('on', b.dataset.theme === pref);
 
+  for (const b of $('#orderSeg').children) b.classList.toggle('on', b.dataset.order === state.showOrder);
   const names = [...state.hiddenPeople].sort((a, b) => a.localeCompare(b, 'fr'));
   const nHidden = state.hiddenPeople.size + state.hiddenChains.size;
   $('#hideCount').textContent = nHidden ? ` · ${nHidden}` : '';
@@ -1518,6 +1609,14 @@ function bindPrefs() {
     if (state.view === 'map') render();
   };
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => applyTheme(store.get('theme', null)));
+  $('#orderSeg').onclick = (e) => {
+    const b = e.target.closest('[data-order]');
+    if (!b) return;
+    state.showOrder = b.dataset.order;
+    store.set('showOrder', state.showOrder);
+    renderPrefs();
+    for (const li of $('#list').querySelectorAll('.item.open')) fillDetail(li);
+  };
 
   // Personnes masquées : autocomplétion
   const input = $('#personInput'), list = $('#personList');
