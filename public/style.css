@@ -270,11 +270,10 @@ main { padding: 0 var(--pad) 0 var(--gutter); min-width: 0; }
 #results:not(.map-mode) .row:hover { box-shadow: calc(-1 * var(--gutter)) 0 0 var(--hover), var(--pad) 0 0 var(--hover); }
 .item.open { border-bottom-color: var(--line); }
 .item.open > .row { background: transparent; }
-/* Film ouvert : sa ligne reste visible sous l'en-tête des colonnes pendant qu'on parcourt les séances */
+/* Film ouvert : ligne sur fond blanc (plus accrochée en haut en mode liste) */
 #results:not(.map-mode) .item.open > .film-row,
 #results:not(.map-mode) .item.closing > .film-row {
-  position: sticky; top: calc(var(--header-h, 0px) + var(--bar-h, 0px) + var(--subhead-h)); z-index: 1;
-  /* fond blanc (noir en sombre) comme le film ouvert, y compris quand la ligne reste accrochée en haut */
+  /* fond blanc (noir en sombre) comme le film ouvert */
   background: var(--active); box-shadow: calc(-1 * var(--gutter)) 0 0 var(--active), var(--pad) 0 0 var(--active);
   transition: background-color .22s ease, box-shadow .22s ease;
 }
@@ -431,7 +430,7 @@ body.no-scroll { overflow: hidden; }
 .prefs-overlay { position: fixed; inset: 0; z-index: 60; background: rgba(0, 0, 0, .55); opacity: 0; transition: opacity .32s ease; }
 .prefs-overlay.open { opacity: 1; }
 .prefs {
-  position: fixed; z-index: 61; top: 0; right: 0; bottom: 0; width: min(440px, 100vw); overflow-y: auto;
+  position: fixed; z-index: 61; top: 0; right: 0; bottom: 0; width: 30%; min-width: min(360px, 100%); /* 3 colonnes sur 10 */ overflow-y: auto;
   background: var(--bg); border-left: 1px solid var(--line);
   transform: translateX(100%); transition: transform .32s cubic-bezier(.2, .8, .2, 1);
 }
@@ -494,6 +493,7 @@ body.no-scroll { overflow: hidden; }
   .pop:not(.inline) { left: 12px !important; right: 12px; width: auto; }
   .tabs { order: 3; width: 100%; height: 38px; border-top: 1px solid var(--hair); margin: 0 calc(-1 * var(--pad)); padding: 0 var(--pad); width: calc(100% + 2 * var(--pad)); }
   .days button { flex: 0 0 auto; min-width: max-content; }
+  .prefs { width: min(440px, 100%); }
   .top { flex-wrap: wrap; }
   .search { width: 100%; height: 40px; border-right: 0; border-top: 0; }
   .days { flex-basis: 100%; }
