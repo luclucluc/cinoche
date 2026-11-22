@@ -131,6 +131,14 @@ a { color: inherit; }
 /* Seuls les filtres défilent : les boutons du bas restent toujours visibles */
 .sidebar > .filters { flex: 0 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: thin; }
 .filters > * { flex-shrink: 0; }
+/* VO / VF et PDF : juste sous les filtres, hors de la zone qui défile (la liste des filtres rétrécit et défile seule) */
+.side-tools { margin-top: -1px; }
+.side-tools #version { display: flex; }
+.side-tools #version button { flex: 1; height: var(--filter-h); }
+@media (min-width: 861px) {
+  .side-tools #version button:first-child { border-left: 0; }
+  .side-tools #version button:last-child { border-right: 0; margin-right: 0; }
+}
 /* Films vus et Compte, en bas de la colonne */
 .side-actions { display: flex; margin-top: auto; }
 .side-actions .text-btn { flex: 1; height: 40px; border-left: 0; border-bottom: 0; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
