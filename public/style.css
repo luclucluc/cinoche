@@ -416,11 +416,15 @@ main { padding: 0 var(--pad) 0 var(--gutter); min-width: 0; }
 /* Séances d'un film par horaire : onglets des jours, une ligne par séance, fiche au clic */
 .by-time { border-top: 1px solid var(--hair); padding-top: 10px; }
 .day-tabs { display: flex; gap: 0; margin-bottom: 6px; overflow-x: auto; }
-.day-tabs button { display: flex; flex-direction: column; align-items: center; min-width: 52px; padding: 5px 8px; border: 0; background: none; color: var(--muted); font: 700 18px var(--sans); line-height: 1.1; cursor: pointer; }
+.day-tabs button { display: flex; flex-direction: column; align-items: flex-start; width: 70px; flex: none; padding: 5px 8px; border: 0; background: none; color: var(--muted); font: 700 18px var(--sans); line-height: 1.1; cursor: pointer; }
 .day-tabs button small { font: 500 var(--fs-small) var(--sans); text-transform: uppercase; letter-spacing: .04em; }
 .day-tabs button:hover { color: var(--ink); background: var(--hover); }
 .day-tabs button.on { color: var(--ink); background: var(--active); }
 .show-list { list-style: none; margin: 0; padding: 0; max-height: 30vh; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; } /* séances : 30vh max, défilement interne */
+/* Dégradé en bas tant qu'il reste à défiler (inactif si la liste ne déborde pas) */
+@property --show-fade { syntax: '<length>'; inherits: false; initial-value: 0px; }
+.show-list { mask-image: linear-gradient(to bottom, #000 calc(100% - var(--show-fade)), transparent); animation: show-fade linear both; animation-timeline: scroll(self); }
+@keyframes show-fade { 0%, 90% { --show-fade: 56px; } 100% { --show-fade: 0px; } }
 .show-row { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; gap: 14px; align-items: baseline; width: 100%; padding: 7px 8px; border: 0; border-top: 1px solid var(--hair); background: none; color: var(--ink); font: var(--fs-text) var(--sans); text-align: left; cursor: pointer; }
 .show-list > li:first-child .show-row { border-top: 0; }
 .sr-time { font-weight: 700; font-variant-numeric: tabular-nums; }
