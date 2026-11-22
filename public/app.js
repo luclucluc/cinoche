@@ -1001,7 +1001,7 @@ function fillDetail(li) {
       `<ul class="credits links link-pills">${links.map((l) => `<li>${l}</li>`).join('')}</ul>` +
       `</aside></div>` +
       places
-        .map(({ t, ss }) => `<div class="place"><div class="place-name">${state.favs.has(t.id) ? '★ ' : ''}${esc(t.name)}<small>${esc(t.address || t.area)}${dist(t) != null ? ` · ${fmtDistance(dist(t))}` : ''}</small><a class="pill-link route-btn" href="${routeUrl(t)}" target="_blank" rel="noopener">Itinéraire ↗</a></div>${timeChips(ss, t.id)}</div>`)
+        .map(({ t, ss }) => `<div class="place"><div class="place-name">${state.favs.has(t.id) ? '★ ' : ''}${esc(t.name)}<small>${esc(t.address || t.area)}${dist(t) != null ? ` · ${fmtDistance(dist(t))}` : ''}</small><a class="pill-link route-btn" href="${routeUrl(t)}" target="_blank" rel="noopener">Itinéraire</a></div>${timeChips(ss, t.id)}</div>`)
         .join('');
   } else {
     const t = it.t;
@@ -1133,13 +1133,13 @@ function printProgramme() {
   if (!current?.shows.length) return alert('Aucune séance à exporter avec ces filtres.');
   const week = state.date === 'week';
   const fmtDay = (d) => new Date(d + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-  const when = week ? `du ${fmtDay(P.dates[0])} au ${fmtDay(P.dates.at(-1))}` : fmtDay(state.date);
+  const when = week ? `${fmtDay(P.dates[0])} → ${fmtDay(P.dates.at(-1))}` : fmtDay(state.date);
   const time = (s) => `<span class="pt">${s[2].slice(11)}${s[3] ? `<i>${esc([s[3], ...formatsOf(s).map((f) => FORMAT_LABEL[f] || f)].join(' '))}</i>` : ''}</span>`;
   const times = (ss) => {
-    if (!week) return ss.map(time).join(' ');
+    if (!week) return `<div class="pts">${ss.map(time).join('')}</div>`;
     const byDay = new Map();
     for (const s of ss) (byDay.get(s[2].slice(0, 10)) || byDay.set(s[2].slice(0, 10), []).get(s[2].slice(0, 10))).push(s);
-    return [...byDay].map(([d, x]) => `<div><b>${esc(dayLabel(d))}</b> ${x.map(time).join(' ')}</div>`).join('');
+    return [...byDay].map(([d, x]) => `<div class="pday"><span>${esc(dayLabel(d))}</span><div class="pts">${x.map(time).join('')}</div></div>`).join('');
   };
 
   // Blocs : titres de groupe (rétrospectives) et films avec leurs cinémas
@@ -1216,8 +1216,11 @@ function printProgramme() {
 
   out.classList.remove('measuring');
   out.innerHTML =
-    `<div class="pmargin">Paris Ciné — ${esc(when)}</div>` +
-    pages.filter((p) => p.length).map((p) => `<table class="ppage"><tbody>${p.join('')}</tbody></table>`).join('');
+    pages.filter((p) => p.length).map((p, i, all) => {
+      // bande verticale propre à chaque page : « page n/N — dates — page n/N — dates… »
+      const unit = `page ${i + 1}/${all.length} — ${esc(when)}`;
+      return `<div class="psheet"><div class="pmargin">${Array(8).fill(unit).join(' — ')}</div><table class="ppage"><tbody>${p.join('')}</tbody></table></div>`;
+    }).join('');
   const title = document.title;
   document.title = `Paris Ciné — programme ${week ? 'semaine' : state.date}`;
   window.addEventListener('afterprint', () => { document.title = title; }, { once: true });

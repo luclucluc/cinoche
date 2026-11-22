@@ -122,7 +122,7 @@ export class CineMap {
         zIndexOffset: p.inside ? 500 : 0,
         riseOnHover: true,
       }).addTo(this.layer);
-      m.bindTooltip(p.name, { direction: 'top', offset: [0, -12] });
+      m.bindTooltip(p.name, { direction: 'top', offset: [0, p.count && p.inside ? -32 : -6] });
       m.on('click', () => this.onSelect(p.id));
       this.markers.set(p.id, m);
     }
