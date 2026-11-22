@@ -88,7 +88,8 @@ const state = {
   date: null, // 'YYYY-MM-DD' ou 'week'
   version: store.get('version', ''),
   hours: '0',
-  zone: store.get('zone', ''),
+  // un ancien bug enregistrait la position du curseur de distance (« 432 ») comme lieu : on la répare
+  zone: ((z) => (/^\d+(\.\d+)?$/.test(z) ? (store.get('geo', null) ? '@near' : '') : z))(store.get('zone', '')),
   cinemas: new Set(store.get('cinemas', [])),
   cards: new Set(store.get('cards', [])),
   langs: new Set(),
@@ -518,6 +519,9 @@ function bindControls() {
   const pop = $('#pop');
   pop.addEventListener('click', (e) => e.stopPropagation());
   pop.addEventListener('change', (e) => {
+    // Seules les cases et boutons d'option choisissent une valeur : les curseurs (distance, heures) et
+    // le champ d'adresse émettent aussi « change » au relâchement, déjà traités par « input »
+    if (!e.target.matches('input[type="radio"], input[type="checkbox"]')) return;
     const f = FILTERS[popKey];
     const v = e.target.value;
     if (f.single) {
