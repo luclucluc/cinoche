@@ -13,6 +13,7 @@ import { addSensCritique } from './senscritique.js';
 import { addRatings } from './ratings.js';
 import { cinechequeTheaters } from './cinecheque.js';
 import { addFullCast } from './cast.js';
+import { fetchPress } from './press.js';
 
 const BASE = 'https://www.allocine.fr';
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36';
@@ -303,6 +304,7 @@ async function main() {
       safe('SensCritique', addSensCritique(movies)),
       safe('Notes IMDb/Letterboxd/RT/Metacritic', addRatings(movies)),
       safe('Distributions', addFullCast(movies)),
+      safe('Critiques presse', fetchPress(movies)),
     ]);
   }
 
