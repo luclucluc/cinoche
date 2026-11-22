@@ -745,7 +745,7 @@ let current = { shows: [], byKey: new Map() };
 // Boutons de la colonne de filtres que l'on peut masquer (Compte → Affichage)
 const CONTROLS = [
   ['tab', 'Sélection'], ['hours', 'Heures'], ['zone', 'Lieu'], ['cinemas', 'Cinémas'], ['cards', 'Cartes'],
-  ['langs', 'Langues'], ['genres', 'Genres'], ['formats', 'Format'], ['sort', 'Tri'], ['version', 'VO / VF'], ['view', 'Liste / Carte'], ['pdf', 'Télécharger le PDF'],
+  ['langs', 'Langues'], ['genres', 'Genres'], ['formats', 'Format'], ['version', 'VO / VF'], ['view', 'Liste / Carte'], ['pdf', 'Télécharger le PDF'],
 ];
 function controlEl(key) {
   if (key === 'version') return $('#version');
@@ -793,11 +793,6 @@ function render() {
   updateFavBtn();
   $('#empty').textContent = state.onlyFavs && !state.favMovies.size ? 'Aucun favori pour l’instant : cliquez sur le signet d’un film pour l’ajouter.' : 'Aucune séance ne correspond à ces filtres.';
   $('#mapBox').hidden = !isMap;
-  // le tri concerne la liste des films : grisé et inactif en vue carte
-  const sortChip = document.querySelector('.chip[data-f="sort"]');
-  sortChip.disabled = isMap;
-  sortChip.title = isMap ? 'Le tri s’applique à la liste' : '';
-  if (isMap && popKey === 'sort') closePop();
   $('#results').classList.toggle('map-mode', isMap);
   document.documentElement.style.setProperty('--ncells', visibleRatings().length);
   setStatus(''); // rien au-dessus de la carte
@@ -814,12 +809,13 @@ function render() {
   // En-tête des colonnes (vue Films)
   $('#listHead').hidden = !films || !shows.length;
   $('#listHead').innerHTML = films
-    ? `<span></span><span>Film</span><span>Réalisation</span><span class="year-head">Année</span><span class="cells">${visibleRatings().map((r) => `<button class="cell${state.sort === r.key ? ' on' : ''}" data-sort="${r.key}" title="Trier par ${esc(r.title)}">${esc(r.short || r.label)}</button>`).join('')}</span>`
+    ? `<label class="sort-head" title="Trier la liste"><select id="sortSel" aria-label="Tri">${sortOptions().map(([v, l]) => `<option value="${v}"${state.sort === v ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></label><span>Réalisation</span><span class="year-head">Année</span><span class="cells">${visibleRatings().map((r) => `<button class="cell${state.sort === r.key ? ' on' : ''}" data-sort="${r.key}" title="Trier par ${esc(r.title)}">${esc(r.short || r.label)}</button>`).join('')}</span>`
     : '';
   $('#listHead').onclick = (e) => {
     const b = e.target.closest('[data-sort]');
     if (b) { state.sort = state.sort === b.dataset.sort ? 'copies' : b.dataset.sort; render(); }
   };
+  $('#listHead').onchange = (e) => { if (e.target.id === 'sortSel') { state.sort = e.target.value; render(); } };
 
   const html = [];
   for (const it of items) {

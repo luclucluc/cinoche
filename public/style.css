@@ -282,6 +282,10 @@ main { padding: 0 var(--pad) 0 var(--gutter); min-width: 0; }
   margin: 0 calc(-1 * var(--pad)) 0 calc(-1 * var(--gutter)); padding: 0 calc(var(--pad) + 8px) 0 calc(var(--gutter) + 8px); height: var(--subhead-h); border-bottom: 1px solid var(--line);
   font-size: var(--fs-small); color: var(--muted);
 }
+.list-head .sort-head { grid-column: 1 / 3; position: relative; justify-self: start; } /* Tri à la place de « Film », aligné sur les affiches */
+.list-head .sort-head select { field-sizing: content; appearance: none; border: 0; background: none; padding: 2px 16px 2px 0; color: var(--muted); font: inherit; cursor: pointer; outline: 0; }
+.list-head .sort-head select:hover { color: var(--ink); }
+.list-head .sort-head::after { content: ''; position: absolute; right: 2px; top: 50%; margin-top: -2px; border: 4px solid transparent; border-top-color: currentColor; border-bottom: 0; pointer-events: none; } /* petit triangle */
 .list-head .cell { border: 0; background: none; color: inherit; font: inherit; letter-spacing: inherit;  padding: 2px 0; }
 .list-head .cell:hover { color: var(--ink); }
 .list-head .cell.on { color: var(--ink); text-decoration: underline; text-underline-offset: 4px; }
