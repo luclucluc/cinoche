@@ -516,7 +516,7 @@ function bindControls() {
     const chip = e.target.closest('.chip');
     if (chip) { e.stopPropagation(); openPop(chip.dataset.f, chip); }
   });
-  $('#favBtn').onclick = () => { state.onlyFavs = !state.onlyFavs; render(); };
+  $('#favBtn').onclick = $('#topFavBtn').onclick = () => { state.onlyFavs = !state.onlyFavs; render(); };
   const pop = $('#pop');
   pop.addEventListener('click', (e) => e.stopPropagation());
   pop.addEventListener('change', (e) => {
@@ -1319,11 +1319,16 @@ function updateFavBtn() {
   $('#favCount').textContent = n || '';
   $('#favBtn').classList.toggle('on', state.onlyFavs);
   $('#favBtn').setAttribute('aria-pressed', state.onlyFavs);
+  // copie dans la barre du haut (mobile)
+  $('#topFavBtn').title = $('#favBtn').title;
+  $('#topFavBtn').classList.toggle('on', state.onlyFavs);
+  $('#topFavBtn').setAttribute('aria-pressed', state.onlyFavs);
 }
 function updateSeenBtn() {
   const n = Object.keys(state.seen).length;
   $('#seenBtn').title = `Films vus (${n})`;
   $('#seenCount').textContent = n || '';
+  $('#topSeenBtn').title = $('#seenBtn').title;
 }
 
 function renderSeen() {
@@ -1372,7 +1377,7 @@ function closeSeen() {
 }
 
 function bindSeen() {
-  $('#seenBtn').onclick = openSeen;
+  $('#seenBtn').onclick = $('#topSeenBtn').onclick = openSeen;
   $('#seenClose').onclick = closeSeen;
   $('#seenOverlay').onclick = closeSeen;
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#seenPanel').hidden) closeSeen(); });
@@ -1716,6 +1721,7 @@ function bindPrefs() {
     if (b) setPrefsTab(b.dataset.ptab);
   };
   $('#prefsBtn').onclick = openPrefs;
+  $('#topPrefsBtn').onclick = openPrefs; // mobile : en haut à droite
   $('#prefsClose').onclick = closePrefs;
   $('#prefsOverlay').onclick = closePrefs;
   document.addEventListener('click', (e) => { if (e.target.closest('[data-open-prefs]')) openPrefs(); });

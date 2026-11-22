@@ -383,10 +383,10 @@ main { padding: 0 var(--pad) 0 var(--gutter); min-width: 0; }
 .item.closing .detail { background: transparent; transition: background-color .22s ease; }
 .film-head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(160px, 220px) minmax(100px, 140px); gap: 0 32px; margin-bottom: 6px; }
 .film-side ul, .film-links ul { list-style: none; padding: 0; }
-.film-side li + li, .film-links li + li { margin-top: 3px; }
+.film-side li + li, .film-links li + li { margin-top: 1px; }
 .film-main .credits { color: var(--ink); } /* acteurs en noir, comme le synopsis */
-.facts { margin: 0 0 12px; font-size: var(--fs-text); color: var(--muted); }
-.credits { font-size: var(--fs-text); margin: 0 0 10px; color: var(--muted); }
+.facts { margin: 0 0 12px; font-size: var(--fs-text); line-height: 1.35; color: var(--muted); }
+.credits { font-size: var(--fs-text); line-height: 1.35; margin: 0 0 10px; color: var(--muted); }
 .credits a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--faint); }
 .credits a:hover { text-decoration-color: var(--ink); }
 .links { font-size: var(--fs-small); }
@@ -404,7 +404,7 @@ main { padding: 0 var(--pad) 0 var(--gutter); min-width: 0; }
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M1 9 9 1M3 1h6v6' fill='none' stroke='black' stroke-width='0.9'/%3E%3C/svg%3E") center / contain no-repeat;
           mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M1 9 9 1M3 1h6v6' fill='none' stroke='black' stroke-width='0.9'/%3E%3C/svg%3E") center / contain no-repeat; }
 .link-pills a:hover, .pill-link:hover { background: var(--hover); }
-.synopsis { font: var(--fs-text)/1.55 var(--sans); color: var(--ink); margin: 0 0 12px; max-width: 80ch; }
+.synopsis { font: var(--fs-text)/1.4 var(--sans); color: var(--ink); margin: 0 0 12px; max-width: 80ch; }
 .place { display: grid; grid-template-columns: minmax(180px, 260px) 1fr; gap: 12px; padding: 9px 0; border-top: 1px solid var(--hair); }
 .place-name { font: 700 var(--fs-text) var(--sans); }
 .place-name small { display: block; color: var(--muted); font: var(--fs-small) var(--mono); margin-top: 2px; }
@@ -419,7 +419,7 @@ main { padding: 0 var(--pad) 0 var(--gutter); min-width: 0; }
 .time:hover, .time.picked { background: color-mix(in srgb, var(--time-bg), #000 12%); color: var(--ink); }
 
 /* Séances d'un film par horaire : onglets des jours, une ligne par séance, fiche au clic */
-.by-time { border-top: 1px solid var(--hair); padding-top: 10px; }
+.by-time { padding-top: 10px; } /* un seul filet : celui de la liste des séances */
 .day-tabs { display: flex; gap: 0; margin-bottom: 0; overflow-x: auto; }
 .day-tabs button { display: flex; flex-direction: column; align-items: flex-start; width: 70px; flex: none; padding: 5px 8px; border: 0; background: none; color: var(--muted); font: 700 18px var(--sans); line-height: 1.1; cursor: pointer; }
 .day-tabs button small { font: 500 var(--fs-small) var(--sans); text-transform: uppercase; letter-spacing: .04em; }
@@ -624,12 +624,20 @@ body.no-scroll { overflow: hidden; }
   .tabs { order: 3; width: 100%; height: 38px; border-top: 1px solid var(--hair); margin: 0 calc(-1 * var(--pad)); padding: 0 var(--pad); width: calc(100% + 2 * var(--pad)); }
   .days button { flex: 0 0 auto; min-width: max-content; }
   .prefs { width: min(440px, 100%); }
-  /* En-tête mobile : les jours, puis le burger des filtres et la recherche sur une même ligne */
+  /* En-tête mobile : le burger des filtres et la recherche sur une même ligne, puis les jours */
   .top { flex-wrap: wrap; }
-  .days { order: 1; flex-basis: 100%; }
-  .burger { order: 2; display: flex; align-items: center; justify-content: center; flex: none; width: 46px; height: 40px; padding: 0; border: 0; border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+  .days { order: 3; flex-basis: 100%; }
+  .days button { border-top: 0; } /* le filet du dessus est celui de la recherche */
+  .burger { order: 1; display: flex; align-items: center; justify-content: center; flex: none; width: 46px; height: 40px; padding: 0; border: 0; border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
   .burger:hover, body.filters-open .burger { background: var(--hover); }
-  .search { order: 3; flex: 1; width: auto; height: 40px; padding-left: 12px; border-right: 0; border-top: 0; }
+  .top-account { order: 2; border-right: 0; border-left: 1px solid var(--line); }
+  body.filters-open .top-account { background: var(--bg); }
+  .top-account:hover { background: var(--hover); }
+  .top-account svg { fill: none; stroke: currentColor; stroke-width: 1.6; }
+  .top-fav.on { background: var(--active); }
+  .top-fav.on svg { fill: currentColor; }
+  .side-actions { display: none !important; } /* Favoris, Films vus et Compte : dans la barre du haut sur mobile */
+  .search { order: 2; flex: 1; width: auto; height: 40px; padding-left: 12px; border-right: 0; border-top: 0; }
   .results-bar { display: none; } /* le bouton Filtres est remplacé par le burger */
   .layout { display: block; }
   main { padding-left: var(--pad); }
@@ -650,7 +658,9 @@ body.no-scroll { overflow: hidden; }
   .info-open > .info-toggle::after { transform: rotate(180deg); }
   .info-toggle:hover { color: var(--ink); }
   .detail:not(.info-open) > .film-head { display: none; }
-  .side-close { display: inline-flex; align-items: center; align-self: stretch; padding: 0 var(--pad); text-decoration: none; border-left: 1px solid var(--line); }
+  /* Croix à gauche, à l'emplacement du burger qui ouvre le menu */
+  .side-head { gap: 0; }
+  .side-close { order: -1; display: inline-flex; align-items: center; justify-content: center; align-self: stretch; flex: none; width: 46px; padding: 0; text-decoration: none; border-right: 1px solid var(--line); }
 }
 
 /* ---------- Export PDF ---------- */

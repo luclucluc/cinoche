@@ -21,6 +21,10 @@
         <input id="q" type="search" placeholder="Rechercher…" title="Film, réalisateur, acteur, cinéma" autocomplete="off" />
         <button class="x-circle" id="qClear" type="button" title="Effacer la recherche" aria-label="Effacer la recherche" hidden><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8" /><path d="M5.4 5.4l5.2 5.2M10.6 5.4l-5.2 5.2" /></svg></button>
       </label>
+      <!-- Mobile : Favoris, Films vus et Compte, à droite de la recherche -->
+      <button class="burger top-account top-fav" id="topFavBtn" type="button" aria-label="Favoris" aria-pressed="false"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3.5h11v17l-5.5-4.2-5.5 4.2z" /></svg></button>
+      <button class="burger top-account" id="topSeenBtn" type="button" aria-label="Films vus" aria-haspopup="dialog"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5" /></svg></button>
+      <button class="burger top-account" id="topPrefsBtn" type="button" aria-label="Compte" title="Compte : apparence, notes, masquages, export" aria-haspopup="dialog"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4" /><path d="M4.5 20.5c1.2-3.8 4.1-5.8 7.5-5.8s6.3 2 7.5 5.8" /></svg></button>
       <div class="days" id="days" role="tablist" aria-label="Jour"></div>
     </header>
 
