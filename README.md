@@ -40,6 +40,22 @@ Le filtre « Lieu » propose aussi un bloc « Autour de… » : on y choisit un 
 
 Seuls appels externes depuis le navigateur : le fond de carte OpenStreetMap, Leaflet (unpkg) et, quand vous saisissez une adresse, l'API Adresse de l'IGN (le texte saisi lui est transmis).
 
+## Compte synchronisé (facultatif)
+
+Dans **Compte → Données → Stockage des préférences**, chacun choisit :
+- **Dans ce navigateur** (par défaut) : rien ne quitte le navigateur ;
+- **Compte synchronisé** : connexion par **lien envoyé par e-mail** (sans mot de passe). Les préférences suivent sur tous les navigateurs et appareils : thème, favoris, films vus, masquages, notes, boutons affichés, cartes, position…
+
+La synchronisation repose sur [Supabase](https://supabase.com) (offre gratuite). La version la plus récente l'emporte, et chaque modification est envoyée quelques secondes plus tard. On peut se déconnecter ou supprimer son compte depuis le même écran.
+
+Mise en place, à faire une seule fois :
+1. Créer un projet sur supabase.com, de préférence avec une région européenne (Paris : `eu-west-3`).
+2. Ouvrir *SQL Editor*, coller le contenu de [supabase/schema.sql](supabase/schema.sql) et cliquer sur *Run*. Cela crée la table `preferences`, protégée pour que chacun ne voie que sa ligne.
+3. Dans *Authentication → URL Configuration*, mettre `https://luclucluc.github.io/paris-cine/` en *Site URL* et dans les *Redirect URLs*.
+4. Dans *Project Settings → API*, copier la **Project URL** et la clé **anon / publishable** dans [public/config.js](public/config.js). Cette clé est publique par conception : la protection vient des règles d'accès.
+
+Tant que `public/config.js` est vide, le site fonctionne uniquement en mode « ce navigateur ».
+
 ## Données
 
 Le scraper ([scraper/scrape.js](scraper/scrape.js)) interroge Allociné :

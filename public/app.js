@@ -4,6 +4,12 @@
 import { CineMap, distance, fmtDistance, searchAddress } from './map.js';
 import { CARDS, acceptsCard } from './cards.js';
 import { CHAINS, chainOf } from './chains.js';
+import * as sync from './sync.js';
+
+// Retour du lien de connexion envoyé par e-mail (#access_token=…) : capturé avant que l'URL
+// ne soit réécrite par les filtres, puis retiré de la barre d'adresse
+const AUTH_RETURN = /access_token=/.test(location.hash) ? location.hash : null;
+if (AUTH_RETURN) history.replaceState(null, '', location.pathname + location.search);
 
 const $ = (s) => document.querySelector(s);
 const POSTER = (p) => (p ? `https://fr.web.img3.acsta.net/c_160_213${p}` : '');
@@ -14,7 +20,7 @@ const fold = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toL
 
 const store = {
   get: (k, d) => { try { return JSON.parse(localStorage.getItem('pc.' + k)) ?? d; } catch { return d; } },
-  set: (k, v) => localStorage.setItem('pc.' + k, JSON.stringify(v)),
+  set: (k, v) => { localStorage.setItem('pc.' + k, JSON.stringify(v)); sync.notifyPrefsChanged(); }, // + envoi au compte si connecté
 };
 
 // ------------------------------------------------------------------ Notes
@@ -86,6 +92,7 @@ const state = {
   seen: store.get('seen', {}),
   hiddenPeople: new Set(store.get('hiddenPeople', [])), // acteurs / réalisateurs masqués
   hiddenChains: new Set(store.get('hiddenChains', [])), // enseignes masquées
+  hiddenControls: new Set(store.get('hiddenControls', [])), // boutons de la colonne masqués (Compte → Affichage)
   showRatings: new Set(store.get('ratings', RATINGS.map((r) => r.key))), // notes affichées
   open: new Set(),
   geo: store.get('geo', null), // { lat, lon, label } — reste dans ce navigateur
@@ -155,6 +162,13 @@ async function init() {
   bindControls();
   $('#updated').textContent = `Mis à jour le ${new Date(P.generatedAt).toLocaleString('fr-FR', { dateStyle: 'long', timeStyle: 'short' })}`;
   render();
+  // Compte synchronisé (facultatif) : inactif tant que config.js n'est pas renseigné
+  sync.initSync({
+    collect: () => exportPrefs().prefs,
+    apply: (prefs) => replaceLocalPrefs(prefs),
+    onChange: renderSync,
+    authReturn: AUTH_RETURN,
+  });
 }
 
 function parisNow() {
@@ -725,6 +739,34 @@ let hiddenSeen = new Set(); // films masqués par les préférences dans la sél
 
 let current = { shows: [], byKey: new Map() };
 
+// Boutons de la colonne de filtres que l'on peut masquer (Compte → Affichage)
+const CONTROLS = [
+  ['tab', 'Sélection'], ['hours', 'Heures'], ['zone', 'Lieu'], ['cinemas', 'Cinémas'], ['cards', 'Cartes'],
+  ['langs', 'Langues'], ['genres', 'Genres'], ['formats', 'Format'], ['sort', 'Tri'], ['version', 'VO / VF'], ['view', 'Liste / Carte'], ['pdf', 'Télécharger le PDF'],
+];
+function controlEl(key) {
+  if (key === 'version') return $('#version');
+  if (key === 'pdf') return $('#printBtn');
+  if (key === 'view') return $('#view');
+  const chip = document.querySelector(`.sidebar .chip[data-f="${key}"]`);
+  return chip?.closest('.chip-wrap') || chip;
+}
+function applyControls() {
+  for (const [key] of CONTROLS) {
+    const el = controlEl(key);
+    if (el) el.hidden = state.hiddenControls.has(key);
+  }
+}
+// Masquer un filtre le réinitialise : pas de filtre actif invisible
+function resetControl(key) {
+  if (key === 'version') { state.version = ''; store.set('version', ''); return; }
+  if (key === 'view') { state.view = 'films'; return; } // sans le choix Liste / Carte : vue liste
+  const f = FILTERS[key];
+  if (!f) return;
+  if (f.single) f.set(f.def);
+  else { state[key].clear(); f.set?.(); }
+}
+
 let renderedView = null;
 function render() {
   // Passage Liste ↔ Carte : court fondu des résultats
@@ -732,6 +774,7 @@ function render() {
     $('#results').animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, easing: 'ease-out' });
   }
   renderedView = state.view;
+  applyControls();
   // états visuels des contrôles
   for (const b of $('#view').children) b.classList.toggle('on', b.dataset.view === state.view);
   for (const b of $('#version').children) b.classList.toggle('on', b.dataset.v === state.version);
@@ -1273,6 +1316,9 @@ function renderPrefs() {
   const films = Object.values(P.movies).filter(isHiddenMovie).length;
   $('#peopleHint').textContent = names.length ? `${films} film${films > 1 ? 's' : ''} du programme masqué${films > 1 ? 's' : ''}.` : 'Aucun nom masqué.';
 
+  $('#controlList').innerHTML = CONTROLS.map(
+    ([k, label]) => `<label class="pop-opt"><input type="checkbox" value="${k}" ${state.hiddenControls.has(k) ? '' : 'checked'} /><span>${esc(label)}</span></label>`
+  ).join('');
   $('#ratingList').innerHTML = RATINGS.map(
     (r) => `<label class="pop-opt"><input type="checkbox" value="${r.key}" ${state.showRatings.has(r.key) ? 'checked' : ''} /><span>${esc(r.title.replace(/^Note /, '').replace(/^./, (c) => c.toUpperCase()))}</span></label>`
   ).join('');
@@ -1299,9 +1345,60 @@ const fromCode = (code) => JSON.parse(new TextDecoder().decode(Uint8Array.from(a
 
 function importPrefs(data) {
   if (data?.app !== PREFS_APP || typeof data.prefs !== 'object') throw new Error('Ce fichier ne contient pas de préférences Paris Ciné.');
+  localStorage.setItem('pcsync.dirty', '1'); // à envoyer au compte s'il y en a un
+  replaceLocalPrefs(data.prefs);
+}
+// Remplace toutes les préférences de ce navigateur, puis recharge
+function replaceLocalPrefs(prefs) {
   Object.keys(localStorage).filter((k) => k.startsWith('pc.')).forEach((k) => localStorage.removeItem(k));
-  for (const [k, v] of Object.entries(data.prefs)) localStorage.setItem('pc.' + k, JSON.stringify(v));
+  for (const [k, v] of Object.entries(prefs)) localStorage.setItem('pc.' + k, JSON.stringify(v));
   location.reload();
+}
+
+// ------------------------------------------------------------------ Stockage : navigateur ou compte
+
+function renderSync(st = sync.syncState()) {
+  const box = $('#syncBody');
+  if (!box) return;
+  for (const b of $('#syncModeSeg').children) b.classList.toggle('on', b.dataset.mode === st.mode);
+  const when = st.lastSync ? new Date(st.lastSync).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) : null;
+  let html;
+  if (st.mode === 'local') {
+    html = '<p class="hint">Vos préférences restent uniquement dans ce navigateur. Utilisez l’export ci-dessous pour les copier ailleurs.</p>';
+  } else if (!st.configured) {
+    html = '<p class="hint">Les comptes ne sont pas encore activés sur ce site : vos préférences restent dans ce navigateur pour l’instant.</p>';
+  } else if (st.email) {
+    html = `<p class="hint">Connecté : <b>${esc(st.email)}</b>${when ? ` · synchronisé le ${esc(when)}` : ''}.<br />Vos préférences (y compris votre position enregistrée) suivent sur tous vos appareils.</p>
+      <div class="btns"><button class="btn" data-sync="now">Synchroniser maintenant</button><button class="btn" data-sync="logout">Se déconnecter</button><button class="btn" data-sync="delete">Supprimer mon compte</button></div>`;
+  } else if (st.linkSentTo) {
+    html = `<p class="hint">Un lien de connexion a été envoyé à <b>${esc(st.linkSentTo)}</b>. Ouvrez-le sur cet appareil pour vous connecter.</p>
+      <div class="btns"><button class="btn" data-sync="retry">Utiliser une autre adresse</button></div>`;
+  } else {
+    html = `<p class="hint">Recevez un lien de connexion par e-mail (sans mot de passe). Vos préférences seront retrouvées sur tous vos navigateurs et appareils.</p>
+      <form class="sync-form" id="syncForm"><input type="email" id="syncEmail" required placeholder="votre@adresse.fr" autocomplete="email" value="${esc(sync.lastEmail())}" />
+      <button class="btn" type="submit"${st.busy ? ' disabled' : ''}>${st.busy ? 'Envoi…' : 'Recevoir le lien'}</button></form>`;
+  }
+  box.innerHTML = html + (st.error ? `<p class="hint sync-error">${esc(st.error)}</p>` : '');
+}
+
+function bindSync() {
+  $('#syncModeSeg').onclick = (e) => {
+    const b = e.target.closest('[data-mode]');
+    if (b) sync.setMode(b.dataset.mode);
+  };
+  $('#syncBody').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const email = $('#syncEmail').value.trim();
+    if (email) sync.sendLoginLink(email);
+  });
+  $('#syncBody').addEventListener('click', async (e) => {
+    const a = e.target.closest('[data-sync]')?.dataset.sync;
+    if (a === 'now') sync.syncNow();
+    if (a === 'logout') sync.signOut();
+    if (a === 'retry') { await sync.signOut(); renderSync(); }
+    if (a === 'delete' && confirm('Supprimer définitivement votre compte et les préférences enregistrées en ligne ?\nCelles de ce navigateur sont conservées.')) sync.deleteAccount();
+  });
+  renderSync();
 }
 
 // Onglets du volet Compte
@@ -1316,6 +1413,7 @@ function setPrefsTab(name) {
 }
 
 function bindPrefs() {
+  bindSync();
   $('#prefsTabs').onclick = (e) => {
     const b = e.target.closest('[data-ptab]');
     if (b) setPrefsTab(b.dataset.ptab);
@@ -1382,6 +1480,19 @@ function bindPrefs() {
     if (b) { state.hiddenPeople.delete(b.dataset.unhide); savePrefsAndRender(); }
   };
 
+  // Boutons affichés dans la colonne de filtres
+  $('#controlList').onchange = (e) => {
+    const k = e.target.value;
+    if (e.target.checked) state.hiddenControls.delete(k);
+    else {
+      state.hiddenControls.add(k);
+      if (popKey === k) closePop();
+      resetControl(k);
+    }
+    store.set('hiddenControls', [...state.hiddenControls]);
+    render();
+  };
+
   // Notes affichées
   $('#ratingList').onchange = (e) => {
     e.target.checked ? state.showRatings.add(e.target.value) : state.showRatings.delete(e.target.value);
@@ -1429,7 +1540,8 @@ function bindPrefs() {
 
   $('#forget').onclick = () => {
     if (!confirm('Effacer toutes les préférences enregistrées dans ce navigateur (thème, favoris, masquages, position…) ?')) return;
-    Object.keys(localStorage).filter((k) => k.startsWith('pc.')).forEach((k) => localStorage.removeItem(k));
+    // efface ce navigateur (préférences + connexion au compte) ; les données du compte en ligne restent intactes
+    Object.keys(localStorage).filter((k) => k.startsWith('pc.') || k.startsWith('pcsync.')).forEach((k) => localStorage.removeItem(k));
     location.href = location.pathname;
   };
 }
