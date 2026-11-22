@@ -382,8 +382,15 @@ function slideDetail(el, open, done) {
   let from, to;
   if (open) { from = 0; to = Math.max(0, Math.min(el.scrollHeight, innerHeight - el.getBoundingClientRect().top)); }
   else { from = shown; to = 0; }
+  // les marges intérieures (6 px + 24 px) s'animent avec la hauteur, sinon le repli bloque à 30 px puis saute
+  const cs = getComputedStyle(el);
+  const pad = { paddingTop: cs.paddingTop, paddingBottom: cs.paddingBottom };
+  const none = { paddingTop: '0px', paddingBottom: '0px' };
   const anim = el.animate(
-    [{ height: from + 'px', opacity: open ? 0 : 1, overflow: 'hidden' }, { height: to + 'px', opacity: open ? 1 : 0, overflow: 'hidden' }],
+    [
+      { height: from + 'px', opacity: open ? 0 : 1, overflow: 'hidden', ...(open ? none : pad) },
+      { height: to + 'px', opacity: open ? 1 : 0, overflow: 'hidden', ...(open ? pad : none) },
+    ],
     // fermeture : « forwards » garde la hauteur 0 jusqu'au masquage (sinon une image à pleine hauteur)
     { duration: open ? DETAIL_MS : DETAIL_MS * .85, easing: open ? 'cubic-bezier(.2, .7, .2, 1)' : 'cubic-bezier(.4, 0, .2, 1)', fill: open ? 'none' : 'forwards' }
   );
