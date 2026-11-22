@@ -427,8 +427,9 @@ main { padding: 0 var(--pad) 0 var(--gutter); min-width: 0; }
 .sr-name small { margin-left: 8px; color: var(--muted); font-size: var(--fs-small); }
 .sr-tag { font-size: var(--fs-small); color: var(--muted); }
 .sr-tag.vo { color: var(--ink); font-weight: 700; }
-.show-info { margin: 0 0 8px; padding: 4px 8px 12px; background: none; display: grid; gap: 10px; font-size: var(--fs-text); }
-.place + .show-info { margin-top: 2px; }
+.show-info { font-size: var(--fs-text); }
+.si-in { padding: 4px 8px 20px; display: grid; gap: 10px; } /* marges dans le bloc intérieur : la hauteur animée part bien de 0 */
+.place + .show-info .si-in { padding-top: 6px; }
 .si-head { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }
 .si-head span { color: var(--muted); }
 .si-film { flex-basis: 100%; }

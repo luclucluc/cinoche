@@ -1120,7 +1120,7 @@ function showInfo(s, x = {}) {
   const t = P.theaters[s[1]];
   const room = [x.r && esc(x.r), x.c && `${x.ce ? '≈ ' : ''}${x.c} places`, x.s && `écran ${esc(x.s)}`, x.e && `fin vers ${x.e}`].filter(Boolean);
   const cards = CARDS.filter((c) => acceptsCard(c, t, P.cards)).map((c) => c.label);
-  return `<div class="show-info">
+  return `<div class="show-info"><div class="si-in">
     ${room.length ? `<div class="si-head"><span class="si-room">${room.join(' · ')}</span></div>` : ''}
     <div class="si-actions">
       <a class="pill-link" href="${esc(x.u || CINE_URL(t.id))}" target="_blank" rel="noopener">Réserver</a>
@@ -1128,23 +1128,38 @@ function showInfo(s, x = {}) {
     </div>
     ${cards.length ? `<p class="si-cards">Cartes acceptées : ${cards.map(esc).join(', ')}</p>` : ''}
     ${t.screens ? `<p class="si-cards">${t.screens} salle${t.screens > 1 ? 's' : ''}</p>` : ''}
-  </div>`;
+  </div></div>`;
 }
 
-// Ouvre / ferme la fiche sous la séance cliquée (une seule fiche par détail)
+// Ouverture / fermeture d'une fiche de séance en glissant (hauteur animée)
+function slideInfo(el, open) {
+  el.getAnimations().forEach((a) => a.cancel());
+  const h = el.scrollHeight;
+  el.style.overflow = 'hidden';
+  const anim = el.animate(
+    open ? [{ height: '0px', opacity: 0 }, { height: h + 'px', opacity: 1 }] : [{ height: h + 'px', opacity: 1 }, { height: '0px', opacity: 0 }],
+    { duration: open ? 260 : 200, easing: 'cubic-bezier(.2,.7,.3,1)' }
+  );
+  anim.onfinish = () => (open ? (el.style.overflow = '') : el.remove());
+  if (!open) el.classList.add('closing');
+}
+
+// Ouvre / ferme la fiche sous la séance cliquée : une seule fiche ouverte à la fois sur toute la page
 async function toggleShowInfo(btn) {
-  const box = btn.closest('.detail');
   const anchor = btn.closest('.show-list > li') || btn.closest('.place') || btn;
-  const was = anchor.nextElementSibling?.classList.contains('show-info') && anchor.nextElementSibling.dataset.show === btn.dataset.show;
-  box.querySelectorAll('.show-info').forEach((x) => x.remove());
-  box.querySelectorAll('.picked').forEach((x) => x.classList.remove('picked'));
+  const next = anchor.nextElementSibling;
+  const was = next?.classList.contains('show-info') && !next.classList.contains('closing') && next.dataset.show === btn.dataset.show;
+  document.querySelectorAll('.show-info:not(.closing)').forEach((x) => slideInfo(x, false));
+  document.querySelectorAll('[data-show].picked').forEach((x) => x.classList.remove('picked'));
   if (was) return;
   btn.classList.add('picked');
   const s = parseShow(btn.dataset.show);
   const x = (await loadSeances())[s.slice(0, 4).join('|')] || {};
   if (!btn.classList.contains('picked') || !btn.isConnected) return; // refermée ou remplacée entre-temps
   anchor.insertAdjacentHTML('afterend', showInfo(s, x));
-  anchor.nextElementSibling.dataset.show = btn.dataset.show;
+  const el = anchor.nextElementSibling;
+  el.dataset.show = btn.dataset.show;
+  slideInfo(el, true);
 }
 
 // Fichier .ics (heure de Paris) pour ajouter la séance à son agenda
