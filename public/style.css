@@ -26,22 +26,23 @@
   color-scheme: light;
 }
 :root[data-theme='dark'] {
-  /* Sombre : fond gris foncé ; survol et éléments actifs en noir */
-  --bg: #2a2a2a;
-  --surface: #2a2a2a;
-  --ink: #f2f2f2;
-  --muted: #a3a3a3;
-  --faint: #555555;
-  --line: #f2f2f2;
-  --hair: #3d3d3d;
-  --hover: #0b0b0b;
-  --active: #0b0b0b;
-  --accent: #0b0b0b;
-  --on-accent: #f2f2f2;
+  /* Sombre : fond gris très foncé, texte et filets en gris (pas de blanc) ; survol et actifs en noir */
+  --bg: #181818;
+  --surface: #181818;
+  --ink: #c4c4c4;
+  --muted: #828282;
+  --faint: #4a4a4a;
+  --line: #7a7a7a;
+  --hair: #2f2f2f;
+  --hover: #050505;
+  --active: #050505;
+  --accent: #050505;
+  --on-accent: #c4c4c4;
   color-scheme: dark;
 }
 
 * { box-sizing: border-box; border-radius: 0 !important; }
+.link-pills a, .pill-link { border-radius: 4px !important; } /* seules exceptions : boutons gris arrondis de la fiche */
 html { -webkit-text-size-adjust: 100%; }
 body { margin: 0; background: var(--bg); color: var(--ink); font: var(--fs-text)/1.45 var(--mono); -webkit-font-smoothing: antialiased; }
 /* Survol : le fond (et la couleur du texte) changent en fondu de 0,3 s */
@@ -130,15 +131,6 @@ a { color: inherit; }
 /* Seuls les filtres défilent : les boutons du bas restent toujours visibles */
 .sidebar > .filters { flex: 0 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: thin; }
 .filters > * { flex-shrink: 0; }
-/* VO / VF et PDF : hors de la zone qui défile, juste au-dessus des boutons du bas */
-.side-tools { margin-top: auto; }
-.side-tools + .side-actions { margin-top: -1px; }
-.side-tools #version { display: flex; }
-.side-tools #version button { flex: 1; height: var(--filter-h); }
-@media (min-width: 861px) {
-  .side-tools #version button:first-child { border-left: 0; }
-  .side-tools #version button:last-child { border-right: 0; margin-right: 0; }
-}
 /* Films vus et Compte, en bas de la colonne */
 .side-actions { display: flex; margin-top: auto; }
 .side-actions .text-btn { flex: 1; height: 40px; border-left: 0; border-bottom: 0; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
