@@ -459,17 +459,6 @@ function bindControls() {
     const chip = e.target.closest('.chip');
     if (chip) { e.stopPropagation(); openPop(chip.dataset.f, chip); }
   });
-  $('#reset').onclick = () => {
-    for (const [k, f] of Object.entries(FILTERS)) {
-      if (f.neutral) continue;
-      if (f.single) f.set(f.def);
-      else { state[k].clear(); f.set?.(); }
-    }
-    state.version = '';
-    store.set('version', '');
-    state.onlyFavs = false;
-    render();
-  };
   $('#favBtn').onclick = () => { state.onlyFavs = !state.onlyFavs; render(); };
   const pop = $('#pop');
   pop.addEventListener('click', (e) => e.stopPropagation());
@@ -748,7 +737,6 @@ function render() {
   }
   if (state.sort !== 'copies' && RATINGS.some((r) => r.key === state.sort) && !state.showRatings.has(state.sort)) state.sort = 'copies';
   const isMap = state.view === 'map';
-  $('#reset').hidden = !Object.keys(FILTERS).some(isActive) && !state.version && !state.onlyFavs;
   updateFavBtn();
   $('#empty').textContent = state.onlyFavs && !state.favMovies.size ? 'Aucun favori pour l’instant : cliquez sur le signet d’un film pour l’ajouter.' : 'Aucune séance ne correspond à ces filtres.';
   $('#mapBox').hidden = !isMap;
@@ -969,7 +957,8 @@ function fillDetail(li) {
     for (const s of it.shows) (byM.get(s[0]) || byM.set(s[0], []).get(s[0])).push(s);
     const films = [...byM.entries()].map(([mid, ss]) => ({ m: P.movies[mid], ss })).sort((a, b) => a.ss[0][2].localeCompare(b.ss[0][2]));
     box.innerHTML =
-      `<p class="credits"><a class="pill-link" href="${CINE_URL(t.id)}" target="_blank" rel="noopener">Page du cinéma ↗</a>${t.screens ? ` · ${t.screens} salle${t.screens > 1 ? 's' : ''}` : ''}</p>` +
+      // (plus de lien vers la page du cinéma en vue carte)
+      (t.screens ? `<p class="credits">${t.screens} salle${t.screens > 1 ? 's' : ''}</p>` : '') +
       films
         .map(({ m, ss }) => `<div class="place"><div class="place-name film-line"><b>${esc(m.title)}</b><span>${esc(m.directors.slice(0, 2).join(', '))}</span></div>${timeChips(ss, t.id)}</div>`)
         .join('');

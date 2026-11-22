@@ -25,8 +25,10 @@
     <div class="layout">
       <aside class="sidebar" id="sidebar" aria-label="Filtres">
         <div class="side-head">
-          <b>Filtres</b>
-          <button class="x-circle reset" id="reset" title="Réinitialiser tous les filtres" aria-label="Réinitialiser tous les filtres" hidden><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8" /><path d="M5.4 5.4l5.2 5.2M10.6 5.4l-5.2 5.2" /></svg></button>
+          <div class="seg view-seg" id="view" role="group" aria-label="Affichage des résultats">
+            <button data-view="films" class="on"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" /></svg>Liste</button>
+            <button data-view="map"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-6.2-6.5-11.2a6.5 6.5 0 0 1 13 0C18.5 14.8 12 21 12 21z" /><circle cx="12" cy="9.8" r="2.3" /></svg>Carte</button>
+          </div>
           <button class="link side-close" id="sideClose" aria-label="Fermer les filtres">✕</button>
         </div>
         <div class="filters" id="filters">
@@ -43,10 +45,6 @@
             <button data-v="" class="on">VO & VF</button>
             <button data-v="VO">VO</button>
             <button data-v="VF">VF</button>
-          </div>
-          <div class="seg view-seg" id="view" role="group" aria-label="Affichage des résultats">
-            <button data-view="films" class="on"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" /></svg>Liste</button>
-            <button data-view="map"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-6.2-6.5-11.2a6.5 6.5 0 0 1 13 0C18.5 14.8 12 21 12 21z" /><circle cx="12" cy="9.8" r="2.3" /></svg>Carte</button>
           </div>
           <button id="printBtn" class="text-btn print-btn" title="Exporter le programme filtré en PDF"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14" /></svg>PDF</button>
         </div>

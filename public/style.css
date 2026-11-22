@@ -44,6 +44,8 @@
 * { box-sizing: border-box; border-radius: 0 !important; }
 html { -webkit-text-size-adjust: 100%; }
 body { margin: 0; background: var(--bg); color: var(--ink); font: var(--fs-text)/1.45 var(--mono); -webkit-font-smoothing: antialiased; }
+/* Survol : le fond (et la couleur du texte) changent en fondu de 0,3 s */
+button, .pill-link, .link-pills a { transition: background-color .3s ease, color .3s ease, border-color .3s ease; }
 button, select, input { font: inherit; color: inherit; }
 button { cursor: pointer; }
 a { color: inherit; }
@@ -108,8 +110,11 @@ a { color: inherit; }
 /* En-tête « Filtres » : même hauteur que l'en-tête de liste « Film / Réalisation » */
 :root { --subhead-h: 34px; }
 .side-head { display: flex; align-items: center; gap: 10px; height: var(--subhead-h); padding-top: 0; padding-bottom: 0; border-bottom: 1px solid var(--line); font-size: var(--fs-small); }
-.side-head b { font-weight: 600; }
-.side-head .reset { margin-left: auto; }
+/* Liste / Carte en tête de colonne, à la place du titre « Filtres » */
+.side-head #view { flex: 1; display: flex; align-self: stretch; }
+.side-head #view button { flex: 1; height: auto; border-top: 0; border-bottom: 0; }
+.side-head #view button:first-child { border-left: 0; }
+.side-head #view button:last-child { border-right: 0; margin-right: 0; }
 .side-close { display: none; }
 .filters { display: flex; flex-direction: column; align-items: stretch; }
 .filters .seg { display: flex; }
@@ -152,7 +157,7 @@ a { color: inherit; }
 .pop.inline { position: static; width: auto; max-height: 420px; box-shadow: none; margin-top: -1px; border-top: 0; }
 /* Les filtres occupent toute la colonne : collés au bord de la fenêtre et à la ligne de droite */
 @media (min-width: 861px) {
-  .side-head { padding-left: var(--pad); padding-right: 12px; } /* ⓧ alignée sur celle de la recherche */
+  .side-head { padding: 0; }
   .filters .chip, .filters .pop.inline { border-left: 0; border-right: 0; }
   .filters .chip { padding-left: var(--pad); }
   .filters .seg button:first-child { border-left: 0; }
@@ -275,7 +280,7 @@ main { padding: 0 var(--pad) 0 var(--gutter); min-width: 0; }
 #results:not(.map-mode) .item.closing > .film-row {
   /* fond blanc (noir en sombre) comme le film ouvert */
   background: var(--active); box-shadow: calc(-1 * var(--gutter)) 0 0 var(--active), var(--pad) 0 0 var(--active);
-  transition: background-color .22s ease, box-shadow .22s ease;
+  transition: background-color .3s ease, box-shadow .3s ease;
 }
 /* pendant la fermeture : suit le fondu du film vers le fond de la page */
 #results:not(.map-mode) .item.closing > .film-row { background: var(--bg); box-shadow: calc(-1 * var(--gutter)) 0 0 var(--bg), var(--pad) 0 0 var(--bg); }
