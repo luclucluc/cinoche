@@ -329,21 +329,20 @@ main { padding: 0 var(--pad) 0 var(--gutter); min-width: 0; }
 .mfav.seen svg { stroke-width: 2.4; }
 
 /* Détail */
-.detail { padding: 6px 8px 24px calc(var(--poster) + 28px); display: none; background: var(--active); }
+.detail { padding: 6px 8px 24px 8px; display: none; background: var(--active); }
 .item.open .detail, .item.closing .detail { display: block; }
 .item.closing .detail { background: transparent; transition: background-color .22s ease; }
-.film-head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(180px, 240px); gap: 0 32px; margin-bottom: 6px; }
-.film-side { border-left: 1px solid var(--faint); padding-left: 16px; }
-.film-side ul { list-style: none; padding: 0; }
-.film-side li + li { margin-top: 3px; }
+.film-head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(160px, 220px) minmax(100px, 140px); gap: 0 32px; margin-bottom: 6px; }
+.film-side ul, .film-links ul { list-style: none; padding: 0; }
+.film-side li + li, .film-links li + li { margin-top: 3px; }
 .facts { margin: 0 0 12px; font-size: var(--fs-text); }
 .credits { font-size: var(--fs-text); margin: 0 0 10px; color: var(--muted); }
 .credits a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--faint); }
 .credits a:hover { text-decoration-color: var(--ink); }
 .links { font-size: var(--fs-small); }
-/* Liens externes de la fiche : pastilles grises côte à côte */
-.film-side .link-pills { display: flex; flex-wrap: wrap; gap: 6px; }
-.film-side .link-pills li + li { margin-top: 0; }
+/* Liens externes de la fiche : pastilles grises empilées dans la dernière colonne */
+.film-links .link-pills { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin: 0; }
+.film-links .link-pills li + li { margin-top: 0; }
 .link-pills a, .credits a.pill-link { display: inline-block; padding: 3px 8px; border-radius: 4px; background: var(--hair); color: var(--ink); text-decoration: none; }
 .link-pills a:hover, .credits a.pill-link:hover { background: var(--faint); }
 .synopsis { font: var(--fs-text)/1.55 var(--sans); color: var(--muted); margin: 0 0 12px; max-width: 80ch; }

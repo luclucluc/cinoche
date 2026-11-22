@@ -997,6 +997,7 @@ function fillDetail(li) {
       (m.synopsis ? `<p class="synopsis">${esc(m.synopsis)}</p>` : '') +
       `</div><aside class="film-side">` +
       (facts.length ? `<ul class="facts">${facts.map((f) => `<li>${f}</li>`).join('')}</ul>` : '') +
+      `</aside><aside class="film-links">` +
       `<ul class="credits links link-pills">${links.map((l) => `<li>${l}</li>`).join('')}</ul>` +
       `</aside></div>` +
       places
@@ -1024,8 +1025,12 @@ function alignInfoCols(root = document) {
   for (const head of root.querySelectorAll('.film-head')) {
     if (!wide || !ref) { head.style.gridTemplateColumns = ''; continue; }
     const gap = parseFloat(getComputedStyle(head).columnGap) || 0;
-    const w = ref.getBoundingClientRect().right - head.getBoundingClientRect().left - gap;
-    head.style.gridTemplateColumns = w > 200 ? `${Math.round(w)}px minmax(0, 1fr)` : '';
+    const box = head.getBoundingClientRect();
+    const w = ref.getBoundingClientRect().right - box.left - gap;
+    // Les liens (Allociné…) occupent la dernière colonne de la page, alignée sur le dernier jour
+    const last = [...document.querySelectorAll('#days button')].pop();
+    const lw = last ? box.right - last.getBoundingClientRect().left : 0;
+    head.style.gridTemplateColumns = w > 200 && lw > 60 ? `${Math.round(w)}px minmax(0, 1fr) ${Math.round(lw)}px` : '';
   }
 }
 window.addEventListener('resize', () => alignInfoCols());
