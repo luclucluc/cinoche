@@ -5,6 +5,7 @@ import { CineMap, distance, fmtDistance, searchAddress } from './map.js';
 import { CARDS, acceptsCard } from './cards.js';
 import { CHAINS, chainOf } from './chains.js';
 import * as sync from './sync.js';
+import { SYNC } from './config.js';
 import { LOGOS } from './logos.js';
 
 // Lien de synchronisation d'un autre appareil (#sync=CLÉ) : capturé avant que l'URL ne soit
@@ -644,6 +645,14 @@ function bindControls() {
   });
 
   $('#list').addEventListener('click', (e) => {
+    const it = e.target.closest('.info-toggle');
+    if (it) {
+      e.stopPropagation();
+      const open = it.parentElement.classList.toggle('info-open');
+      it.setAttribute('aria-expanded', open);
+      if (open) requestAnimationFrame(() => alignInfoCols(it.parentElement));
+      return;
+    }
     const pc = e.target.closest('[data-press]');
     if (pc) { e.stopPropagation(); openPress(pc.dataset.press); return; }
     const ics = e.target.closest('[data-ics]');
@@ -895,9 +904,12 @@ function render() {
     current.byKey.set(it.key, it);
     html.push(it.html);
   }
+  const off = offRows(films);
+  html.push(off);
+  if (off) $('#empty').hidden = true; // « Pas à l'affiche » suffit
   $('#list').innerHTML = html.join('');
   // Un seul résultat de recherche → on l'ouvre directement
-  const only = $('#list').querySelectorAll('.item');
+  const only = $('#list').querySelectorAll('.item:not(.off)');
   if (state.q && only.length === 1) only[0].classList.add('open');
   for (const li of $('#list').querySelectorAll('.item.open')) fillDetail(li);
 
@@ -978,8 +990,10 @@ function ratingCells(m) {
     const v = m[r.key];
     if (v == null) return `<span class="cell na" title="${esc(r.title)}">–</span>`;
     // note presse : ouvre la fenêtre des critiques (extraits, notes, liens vers les articles)
-    if (r.key === 'press') return `<button class="cell press-cell${tier(r, v)}" data-press="${m.id}" title="Voir les critiques presse"><i>${esc(r.short || r.label)}</i>${esc(r.fmt(v))}</button>`;
-    return `<span class="cell${tier(r, v)}" title="${esc(r.title)}"><i>${esc(r.short || r.label)}</i>${esc(r.fmt(v))}</span>`;
+    // <i> : logo de la source, visible seulement sur mobile (sur ordinateur, l'en-tête des colonnes le donne)
+    const lab = `<i data-k="${r.key}">${LOGOS[r.key] || esc(r.short || r.label)}</i>`;
+    if (r.key === 'press') return `<button class="cell press-cell${tier(r, v)}" data-press="${m.id}" title="Voir les critiques presse">${lab}${esc(r.fmt(v))}</button>`;
+    return `<span class="cell${tier(r, v)}" title="${esc(r.title)}">${lab}${esc(r.fmt(v))}</span>`;
   }).join('')}</span>`;
 }
 
@@ -992,6 +1006,65 @@ function bookmark(m) {
     '': ['Ajouter aux favoris', '<path d="M6.5 3.5h11v17l-5.5-4.2-5.5 4.2z" />'],
   }[st];
   return `<button class="mfav${st ? ' ' + st : ''}" data-id="${m.id}" title="${label}" aria-label="${label}"><svg viewBox="0 0 24 24" aria-hidden="true">${icon}</svg></button>`;
+}
+
+// ------------------------------------------------------------------ Recherche Allociné : films pas à l'affiche
+// En dessous des résultats, en gris. Allociné n'accepte pas les appels du navigateur :
+// la recherche passe par le Worker (worker/src/index.js, route /search).
+const searchCache = new Map(); // requête repliée → Promise<{ results: films, people: personnes }>
+function allocineSearch(text) {
+  const k = fold(text.trim());
+  if (!searchCache.has(k)) {
+    searchCache.set(k, fetch(`${SYNC.endpoint}/search?q=${encodeURIComponent(text.trim())}`)
+      .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .catch((e) => { searchCache.delete(k); throw e; })); // réessaiera à la prochaine frappe
+  }
+  return searchCache.get(k);
+}
+const offCache = new Map(); // requête → films trouvés (null : recherche en cours)
+const offMovies = new Map(); // id → film, pour le signet (favori / vu)
+let offTimer, offPending;
+
+function offRows(films) {
+  const q = fold(state.q);
+  if (!films || q.length < 3 || !SYNC.endpoint) return '';
+  if (!offCache.has(q)) {
+    if (offPending && offCache.get(offPending) === null) offCache.delete(offPending); // frappe suivante : on oublie l'ancienne
+    clearTimeout(offTimer);
+    offCache.set(q, null);
+    offPending = q;
+    offTimer = setTimeout(() => fetchOff(q), 250);
+    return '';
+  }
+  const list = (offCache.get(q) || []).filter((m) => !P.movies[m.id]);
+  if (!list.length) return '';
+  return `<li class="group-title off-title">Pas à l’affiche</li>` + list.map((m) => {
+    offMovies.set(m.id, m);
+    const key = 'o' + m.id;
+    current.byKey.set(key, { m, off: true });
+    const orig = m.originalTitle ? `<small>${esc(m.originalTitle)}</small>` : '';
+    return `<li class="item off${state.open.has(key) ? ' open' : ''}" data-key="${key}">
+    <div class="row film-row" role="button" tabindex="0">
+      <span class="poster" style="background-image:url('${POSTER(m.poster)}')"></span>
+      <span class="title with-fav"><span>${esc(m.title)}${orig}</span>${bookmark(m)}</span>
+      <span class="who"><span>${esc(m.directors.slice(0, 2).join(', ') || '—')}</span><span class="year">${esc(m.year || '')}</span></span>
+      <span class="year-col">${esc(m.year || '')}</span>
+      <span class="cells"></span>
+    </div>
+    <div class="detail"></div>
+  </li>`;
+  }).join('');
+}
+
+async function fetchOff(q) {
+  if (fold(state.q) !== q) { offCache.delete(q); return; } // la recherche a changé entre-temps
+  try {
+    offCache.set(q, (await allocineSearch(state.q)).results || []);
+  } catch {
+    offCache.delete(q); // réessaiera à la prochaine frappe
+    return;
+  }
+  if (fold(state.q) === q && state.view === 'films') render();
 }
 
 function movieRow(key, m, shows = []) {
@@ -1044,6 +1117,11 @@ function fillDetail(li) {
   const box = li.querySelector('.detail');
   requestAnimationFrame(() => alignInfoCols(box)); // après affichage du détail
 
+  if (it.off) {
+    box.innerHTML = `<div class="film-head"><div class="film-main"><p class="credits">Aucune séance prévue à Paris cette semaine.</p></div><aside class="film-side"></aside>` +
+      `<aside class="film-links"><ul class="credits links link-pills"><li><a href="${FILM_URL(it.m.id)}" target="_blank" rel="noopener">Allociné</a></li></ul></aside></div>`;
+    return;
+  }
   if (it.m) {
     const m = it.m;
     const byT = new Map();
@@ -1067,6 +1145,8 @@ function fillDetail(li) {
       ...visibleRatings().filter((r) => !['press', 'spect'].includes(r.key) && r.url(m)).map((r) => `<a href="${esc(r.url(m))}" target="_blank" rel="noopener">${esc(r.label)}</a>`),
     ];
     box.innerHTML =
+      // Mobile : infos repliées derrière ce bouton, les horaires d'abord
+      `<button class="info-toggle" aria-expanded="false">Infos</button>` +
       `<div class="film-head"><div class="film-main">` +
       (m.cast.length ? `<p class="credits">Avec ${m.cast.map(esc).join(', ')}</p>` : '') +
       (m.synopsis ? `<p class="synopsis">${esc(m.synopsis)}</p>` : '') +
@@ -1217,10 +1297,10 @@ window.addEventListener('resize', () => alignInfoCols());
 // ------------------------------------------------------------------ Films vus
 
 function markSeen(id) {
-  const m = P.movies[id];
+  const m = P.movies[id] || offMovies.get(id);
   state.seen[id] = {
     title: m.title, year: m.year || null, directors: m.directors.slice(0, 2), poster: m.poster || null,
-    allocineId: m.allocineId, at: parisNow().date, rating: null,
+    allocineId: m.allocineId || m.id, at: parisNow().date, rating: null,
   };
 }
 const saveSeen = () => { store.set('seen', state.seen); updateSeenBtn(); };
@@ -1652,9 +1732,12 @@ function bindPrefs() {
 
   // Personnes masquées : autocomplétion
   const input = $('#personInput'), list = $('#personList');
-  let results = [], active = -1;
+  let results = [], active = -1, pTimer;
   const show = () => {
-    list.innerHTML = results.map((p, i) => `<li data-i="${i}" class="${i === active ? 'on' : ''}">${esc(p.name)} <small>${p.free ? 'absent du programme actuel — masqué pour les prochains films' : `${p.dir ? 'réal.' : 'acteur·rice'} · ${p.n} film${p.n > 1 ? 's' : ''} à l’affiche`}</small></li>`).join('');
+    const note = (p) => p.free ? 'absent du programme actuel — masqué pour les prochains films'
+      : p.ext ? [p.roles, 'aucun film à l’affiche'].filter(Boolean).join(' · ')
+      : `${p.dir ? 'réal.' : 'acteur·rice'} · ${p.n} film${p.n > 1 ? 's' : ''} à l’affiche`;
+    list.innerHTML = results.map((p, i) => `<li data-i="${i}" class="${i === active ? 'on' : ''}">${esc(p.name)} <small>${esc(note(p))}</small></li>`).join('');
     list.hidden = !results.length;
   };
   const add = (name) => {
@@ -1674,6 +1757,23 @@ function bindPrefs() {
     if (q.length >= 3 && !results.some((p) => p.q === q) && !hidden.has(q)) results.push({ name: typed, free: true });
     active = -1;
     show();
+    // Puis les noms connus d'Allociné, pour proposer la bonne orthographe
+    clearTimeout(pTimer);
+    if (q.length < 3 || !SYNC.endpoint) return;
+    pTimer = setTimeout(async () => {
+      let d;
+      try { d = await allocineSearch(typed); } catch { return; }
+      if (fold(input.value.trim()) !== q) return; // la saisie a changé entre-temps
+      const known = results.filter((p) => !p.free);
+      const have = new Set(known.map((p) => p.q));
+      const ext = (d.people || [])
+        .map((p) => ({ name: p.name, q: fold(p.name), ext: true, roles: p.activities.slice(0, 2).join(', ').toLowerCase() }))
+        .filter((p) => !have.has(p.q) && !hidden.has(p.q))
+        .slice(0, 5);
+      results = [...known, ...ext];
+      if (!results.some((p) => p.q === q) && !hidden.has(q)) results.push({ name: typed, free: true });
+      show();
+    }, 250);
   });
   input.addEventListener('keydown', (e) => {
     if (list.hidden) return;
