@@ -226,7 +226,7 @@ main { padding: 0 var(--pad) 0 var(--gutter); min-width: 0; }
 @media (min-width: 861px) { .results-bar { display: none; } }
 
 /* ---------- Liste ---------- */
-.list { list-style: none; margin: 0; padding: 0; }
+.list { list-style: none; margin: 1px 0 0; padding: 0; } /* 1px en haut : films alignés sur les lignes de filtre */
 .list-head[hidden] + .list, .list-head[hidden] + .list + .empty { margin-top: 16px; }
 .group-title { font-size: var(--fs-small); margin: 28px 0 0; padding: 0 0 6px; border-bottom: 1px solid var(--line); }
 .group-title::before { content: '+ '; }
@@ -359,6 +359,7 @@ select { appearance: none; border: 1px solid var(--line); background: var(--surf
 }
 /* Colonne à côté de la carte : bord à bord, retrait seulement à l'intérieur des fiches */
 #results.map-mode .list-col { padding: 0 0 48px; min-width: 0; }
+#results.map-mode .list { margin-top: 0; } /* premier cinéma collé en haut de la colonne */
 #results.map-mode .list .item { margin: 0; padding: 0; }
 #results.map-mode .row { padding: 12px 16px; }
 #results.map-mode .group-title { margin: 0; padding: 18px 16px 6px; }
