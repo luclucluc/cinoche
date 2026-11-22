@@ -113,8 +113,10 @@ init();
 
 async function init() {
   applyTheme(store.get('theme', null));
-  new ResizeObserver(([e]) => document.documentElement.style.setProperty('--header-h', e.target.offsetHeight + 'px')).observe($('.top'));
-  new ResizeObserver(([e]) => document.documentElement.style.setProperty('--bar-h', e.target.offsetHeight + 'px')).observe($('.results-bar'));
+  // hauteurs exactes (au dixième de pixel, pas arrondies) : la colonne et les en-têtes s'accrochent pile sous l'en-tête
+  const exactH = (e) => (e.borderBoxSize?.[0]?.blockSize ?? e.target.getBoundingClientRect().height) + 'px';
+  new ResizeObserver(([e]) => document.documentElement.style.setProperty('--header-h', exactH(e))).observe($('.top'));
+  new ResizeObserver(([e]) => document.documentElement.style.setProperty('--bar-h', exactH(e))).observe($('.results-bar'));
   try {
     const res = await fetch('data/programme.json', { cache: 'no-cache' });
     if (!res.ok) throw new Error(res.status);
@@ -925,8 +927,8 @@ function movieRow(key, m, shows = []) {
   const orig = m.originalTitle ? `<small>${esc(m.originalTitle)}</small>` : '';
   return `<li class="item${open}" data-key="${key}">
     <div class="row film-row" role="button" tabindex="0">
-      <span class="poster" style="background-image:url('${POSTER(m.poster)}')"></span>
-      <span class="title with-fav">${ap ? '<span class="ap" title="Avant-première">Avant<br>première</span>' : ''}<span${!ap && isNew(m) ? ' class="is-new" title="Nouveauté"' : ''}>${esc(m.title)}${orig}</span>${bookmark(m)}</span>
+      <span class="poster${!ap && isNew(m) ? ' is-new' : ''}" style="background-image:url('${POSTER(m.poster)}')"${!ap && isNew(m) ? ' title="Nouveauté"' : ''}></span>
+      <span class="title with-fav">${ap ? '<span class="ap" title="Avant-première">Avant<br>première</span>' : ''}<span>${esc(m.title)}${orig}</span>${bookmark(m)}</span>
       <span class="who"><span>${esc(m.directors.slice(0, 2).join(', ') || '—')}</span><span class="year">${esc(m.year || '')}</span></span>
       <span class="year-col">${esc(m.year || '')}</span>
       ${ratingCells(m)}
@@ -1139,7 +1141,7 @@ function printProgramme() {
     if (!week) return `<div class="pts">${ss.map(time).join('')}</div>`;
     const byDay = new Map();
     for (const s of ss) (byDay.get(s[2].slice(0, 10)) || byDay.set(s[2].slice(0, 10), []).get(s[2].slice(0, 10))).push(s);
-    return [...byDay].map(([d, x]) => `<div class="pday"><span>${esc(dayLabel(d))}</span><div class="pts">${x.map(time).join('')}</div></div>`).join('');
+    return [...byDay].map(([d, x]) => `<div class="pday"><span>${esc(dayLabel(d, ""))}</span><div class="pts">${x.map(time).join('')}</div></div>`).join('');
   };
 
   // Blocs : titres de groupe (rétrospectives) et films avec leurs cinémas
@@ -1217,9 +1219,8 @@ function printProgramme() {
   out.classList.remove('measuring');
   out.innerHTML =
     pages.filter((p) => p.length).map((p, i, all) => {
-      // bande verticale propre à chaque page : « page n/N — dates — page n/N — dates… »
-      const unit = `page ${i + 1}/${all.length} — ${esc(when)}`;
-      return `<div class="psheet"><div class="pmargin">${Array(8).fill(unit).join(' — ')}</div><table class="ppage"><tbody>${p.join('')}</tbody></table></div>`;
+      // en haut à gauche de chaque page, à la verticale : « page n/N — dates »
+      return `<div class="psheet"><div class="pmargin">page ${i + 1}/${all.length} — ${esc(when)}</div><table class="ppage"><tbody>${p.join('')}</tbody></table></div>`;
     }).join('');
   const title = document.title;
   document.title = `Paris Ciné — programme ${week ? 'semaine' : state.date}`;

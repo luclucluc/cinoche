@@ -42,8 +42,9 @@
 }
 
 * { box-sizing: border-box; border-radius: 0 !important; }
-.link-pills a, .pill-link, .time { border-radius: 5px !important; } /* seules exceptions : liens externes et horaires arrondis */
-html { -webkit-text-size-adjust: 100%; }
+.link-pills a, .pill-link, .time { border-radius: 3px !important; } /* seules exceptions : liens externes et horaires arrondis */
+html { -webkit-text-size-adjust: 100%; overscroll-behavior-y: none; } /* pas d'effet élastique : la colonne de filtres ne bouge pas */
+body { overscroll-behavior-y: none; }
 body { margin: 0; background: var(--bg); color: var(--ink); font: var(--fs-text)/1.45 var(--mono); -webkit-font-smoothing: antialiased; }
 /* Survol : le fond (et la couleur du texte) changent en fondu de 0,3 s */
 button, .pill-link, .link-pills a { transition: background-color .3s ease, color .3s ease, border-color .3s ease; }
@@ -104,7 +105,8 @@ a { color: inherit; }
 /* Colonne de filtres */
 .layout { display: grid; grid-template-columns: var(--side) minmax(0, 1fr); align-items: start; container-type: inline-size; } /* 1cqw = 1 % de la page */
 .sidebar {
-  position: sticky; top: var(--header-h, 0px); height: calc(100vh - var(--header-h, 0px)); overflow: hidden;
+  position: sticky; top: var(--header-h, 0px); overflow: hidden;
+  height: calc(100vh - var(--header-h, 0px)); height: calc(100dvh - var(--header-h, 0px)); /* zone réellement visible */
   display: flex; flex-direction: column;
   padding: 0; border-right: 1px solid var(--line); scrollbar-width: thin;
 }
@@ -318,8 +320,7 @@ main { padding: 0 var(--pad) 0 var(--gutter); min-width: 0; }
 }
 .title.with-fav > .ap + span { margin-right: auto; }
 /* Nouveauté : petit astérisque au coin haut gauche du titre */
-.title .is-new { position: relative; }
-.title .is-new::before { content: '*'; position: absolute; left: -10px; top: -4px; font: 600 14px/1 var(--mono); color: var(--ink); pointer-events: none; }
+.poster.is-new { outline: 1px solid var(--ink); outline-offset: 2px; } /* nouveauté : affiche encadrée */
 .title small { display: block; font: var(--fs-small) var(--mono); color: var(--muted); margin-top: 4px; }
 .who { display: flex; flex-direction: column; gap: 3px; font-size: var(--fs-text); }
 .who .year { color: var(--muted); font-variant-numeric: tabular-nums; }
@@ -359,7 +360,7 @@ main { padding: 0 var(--pad) 0 var(--gutter); min-width: 0; }
 .film-links .link-pills { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin: 0; }
 .film-links .link-pills li + li { margin-top: 0; }
 /* Liens externes : bouton à contour arrondi, flèche ↗ à droite */
-.link-pills a, .pill-link { display: inline-flex; align-items: center; gap: 8px; padding: 3px 7px 3px 9px; border: 1.5px solid var(--ink); background: transparent; color: var(--ink); font: var(--fs-small) var(--sans); text-decoration: none; }
+.link-pills a, .pill-link { display: inline-flex; align-items: center; gap: 8px; padding: 3px 7px 3px 9px; border: 1px solid var(--ink); background: transparent; color: var(--ink); font: var(--fs-small) var(--sans); text-decoration: none; }
 .link-pills a::after, .pill-link::after { content: ''; width: 9px; height: 9px; flex: none; background: currentColor;
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M1 9 9 1M3 1h6v6' fill='none' stroke='black' stroke-width='1.3'/%3E%3C/svg%3E") center / contain no-repeat;
           mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M1 9 9 1M3 1h6v6' fill='none' stroke='black' stroke-width='1.3'/%3E%3C/svg%3E") center / contain no-repeat; }
@@ -373,8 +374,8 @@ main { padding: 0 var(--pad) 0 var(--gutter); min-width: 0; }
 .day-line { display: grid; grid-template-columns: 96px 1fr; gap: 8px; align-items: baseline; padding: 2px 0; }
 .day-name { font-size: var(--fs-small); color: var(--muted); }
 /* Horaires : pastille grise sans contour, un peu plus foncée au survol */
-.time { display: inline-flex; align-items: baseline; gap: 8px; padding: 4px 9px; border: 0; color: var(--ink); font-size: var(--fs-text); font-variant-numeric: tabular-nums; text-decoration: none; background: var(--hair); transition: background-color .3s ease; }
-a.time:hover { background: color-mix(in srgb, var(--hair), #000 14%); color: var(--ink); }
+.time { display: inline-flex; align-items: baseline; gap: 8px; padding: 4px 9px; border: 0; color: var(--ink); font-size: var(--fs-text); font-variant-numeric: tabular-nums; text-decoration: none; --time-bg: color-mix(in srgb, var(--hair) 55%, var(--surface)); background: var(--time-bg); transition: background-color .3s ease; }
+a.time:hover { background: color-mix(in srgb, var(--time-bg), #000 12%); color: var(--ink); }
 .time i { font-style: normal; font-size: var(--fs-small); color: var(--muted); }
 .time i.vo { color: var(--ink); font-weight: 700; }
 
@@ -576,18 +577,19 @@ body.no-scroll { overflow: hidden; }
 .pfilm b { display: block; font-size: 12pt; line-height: 1.2; margin-bottom: 2pt; }
 .pt { white-space: nowrap; }
 /* horaires alignés en colonnes : le jour, puis une colonne par séance */
-.pday { display: grid; grid-template-columns: 20mm minmax(0, 1fr); }
+.pday { display: grid; grid-template-columns: 16mm minmax(0, 1fr); align-items: baseline; }
 .pts { display: grid; grid-template-columns: repeat(auto-fill, minmax(14.5mm, 1fr)); }
 .pt i { font-style: normal; font-size: 6.5pt; color: #555; margin-left: 2pt; }
-.pday > span { text-transform: capitalize; }
+.pday > span { text-transform: capitalize; font-size: 7.5pt; color: #555; } /* comme les arrondissements */
 @media print {
   /* marges de page à 0 : le navigateur n'ajoute plus son en-tête (titre, date) ni son pied de page ;
      les marges sont refaites dans chaque page */
   @page { size: A4; margin: 0; }
   .printout { padding-left: 0; }
-  .printout .psheet { position: relative; box-sizing: border-box; height: 296mm; padding: 12mm 12mm 0 14mm; overflow: hidden; break-after: page; }
+  /* pas de hauteur fixe : une feuille ne peut jamais déborder sur la page suivante */
+  .printout .psheet { position: relative; box-sizing: border-box; padding: 12mm 12mm 0 14mm; break-after: page; }
   .printout .psheet:last-child { break-after: auto; }
-  .pmargin { top: 0; height: 100%; overflow: hidden; white-space: nowrap; }
+  .pmargin { top: 12mm; white-space: nowrap; } /* une seule fois, en haut à gauche */
   body > *:not(.printout) { display: none !important; }
   body { background: #fff; color: #000; }
   .printout { display: block; }
