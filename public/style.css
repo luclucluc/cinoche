@@ -248,6 +248,7 @@ body { padding-top: var(--header-h, 0px); }
 .pop-range input:disabled { opacity: .4; cursor: not-allowed; }
 .pop-radius-val { min-width: 56px; text-align: right; font-size: var(--fs-text); font-weight: 600; font-variant-numeric: tabular-nums; }
 .pop-hours { padding: 12px var(--pad) 14px; }
+.sidebar > .filters > .pop.inline:has(.pop-hours) { min-height: 0; } /* pas de vide sous le curseur */
 .pop-hours-val { display: block; font-size: var(--fs-text); margin-bottom: 8px; }
 /* deux curseurs superposés : seules les poignées captent la souris ; la plage choisie est soulignée */
 .dual-range { position: relative; height: 18px; }

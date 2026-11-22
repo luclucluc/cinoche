@@ -331,7 +331,7 @@ function openPop(key, chip, animate = true) {
     (f.note ? `<p class="pop-note">${esc(f.note)}</p>` : '') +
     (rows ? `<ul class="pop-list">${rows}</ul>` : '');
   pop.hidden = false;
-  pop.style.height = pop.style.overflow = pop.style.transition = ''; // annule une animation en cours
+  pop.style.height = pop.style.overflow = pop.style.transition = pop.style.minHeight = ''; // annule une animation en cours
   const inline = !!chip.closest('.sidebar');
   pop.classList.toggle('inline', inline);
   if (inline) {
@@ -462,13 +462,14 @@ function slide(el, dir, done) {
   if (reducedMotion()) return done?.();
   const full = el.getBoundingClientRect().height;
   el.style.overflow = 'hidden';
+  el.style.minHeight = '0'; // sinon la hauteur minimale du volet (140 px) bloque l'animation puis le fait sauter
   el.style.height = (dir === 'open' ? 0 : full) + 'px';
   el.getBoundingClientRect(); // point de départ
   el.style.transition = `height ${SLIDE_MS}ms ease`;
   el.style.height = (dir === 'open' ? full : 0) + 'px';
   clearTimeout(el._slideTimer);
   el._slideTimer = setTimeout(() => {
-    el.style.height = el.style.overflow = el.style.transition = '';
+    el.style.height = el.style.overflow = el.style.transition = el.style.minHeight = '';
     done?.();
   }, SLIDE_MS + 20);
 }
@@ -636,7 +637,6 @@ function bindControls() {
   $('#list').addEventListener('click', (e) => {
     const pc = e.target.closest('[data-press]');
     if (pc) { e.stopPropagation(); openPress(pc.dataset.press); return; }
-    const mfav = e.target.closest('.mfav');
     const ics = e.target.closest('[data-ics]');
     if (ics) { e.stopPropagation(); downloadIcs(parseShow(ics.dataset.ics)); return; }
     const sh = e.target.closest('[data-show]');
@@ -648,6 +648,7 @@ function bindControls() {
       dayTab.closest('.by-time').outerHTML = showsByTime(it.shows, dayTab.dataset.showDay);
       return;
     }
+    const mfav = e.target.closest('.mfav');
     if (mfav) {
       e.stopPropagation();
       // Cycle : rien → favori → vu → rien
@@ -1082,7 +1083,6 @@ function fillDetail(li) {
   }
 }
 
-// Itinéraire Google Maps vers un cinéma (depuis la position de l'appareil)
 // ------------------------------------------------------------------ Séances par horaire et fiche d'une séance
 
 const showKey = (s) => esc([s[0], s[1], s[2], s[3], s[4] || ''].join('~'));
@@ -1161,6 +1161,7 @@ function downloadIcs(s) {
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
+// Itinéraire Google Maps vers un cinéma (depuis la position de l'appareil)
 const routeUrl = (t) => `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent([t.name, t.address].filter(Boolean).join(", "))}`;
 
 // Les colonnes du détail d'un film s'alignent sur la ligne du film : les infos sous la
@@ -1463,8 +1464,8 @@ function people() {
 function renderPrefs() {
   const pref = store.get('theme', null) || '';
   for (const b of $('#themeSeg').children) b.classList.toggle('on', b.dataset.theme === pref);
-
   for (const b of $('#orderSeg').children) b.classList.toggle('on', b.dataset.order === state.showOrder);
+
   const names = [...state.hiddenPeople].sort((a, b) => a.localeCompare(b, 'fr'));
   const nHidden = state.hiddenPeople.size + state.hiddenChains.size;
   $('#hideCount').textContent = nHidden ? ` · ${nHidden}` : '';
@@ -1608,7 +1609,6 @@ function bindPrefs() {
     renderPrefs();
     if (state.view === 'map') render();
   };
-  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => applyTheme(store.get('theme', null)));
   $('#orderSeg').onclick = (e) => {
     const b = e.target.closest('[data-order]');
     if (!b) return;
@@ -1617,6 +1617,7 @@ function bindPrefs() {
     renderPrefs();
     for (const li of $('#list').querySelectorAll('.item.open')) fillDetail(li);
   };
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => applyTheme(store.get('theme', null)));
 
   // Personnes masquées : autocomplétion
   const input = $('#personInput'), list = $('#personList');
