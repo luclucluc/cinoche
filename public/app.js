@@ -384,11 +384,18 @@ function slideDetail(el, open, done) {
   else { from = shown; to = 0; }
   const anim = el.animate(
     [{ height: from + 'px', opacity: open ? 0 : 1, overflow: 'hidden' }, { height: to + 'px', opacity: open ? 1 : 0, overflow: 'hidden' }],
-    { duration: open ? DETAIL_MS : DETAIL_MS * .85, easing: open ? 'cubic-bezier(.2, .7, .2, 1)' : 'cubic-bezier(.4, 0, .2, 1)' }
+    // fermeture : « forwards » garde la hauteur 0 jusqu'au masquage (sinon une image à pleine hauteur)
+    { duration: open ? DETAIL_MS : DETAIL_MS * .85, easing: open ? 'cubic-bezier(.2, .7, .2, 1)' : 'cubic-bezier(.4, 0, .2, 1)', fill: open ? 'none' : 'forwards' }
   );
   // fin garantie même si l'événement d'animation n'arrive pas (onglet en arrière-plan…)
   let ended = false;
-  const end = () => { if (ended) return; ended = true; clearTimeout(timer); done?.(); };
+  const end = () => {
+    if (ended) return;
+    ended = true;
+    clearTimeout(timer);
+    done?.(); // masque le détail…
+    if (!open) requestAnimationFrame(() => anim.cancel()); // …puis libère l'animation figée
+  };
   const timer = setTimeout(end, anim.effect.getTiming().duration + 60);
   anim.onfinish = end;
   anim.oncancel = () => { ended = true; clearTimeout(timer); };
@@ -597,10 +604,17 @@ function bindControls() {
     const opening = !li.classList.contains('open');
     opening ? state.open.add(key) : state.open.delete(key);
     if (opening) {
+      li.classList.remove('closing');
       li.classList.add('open');
       if (!detail.childElementCount) fillDetail(li);
       slideDetail(detail, true);
-    } else slideDetail(detail, false, () => { if (!state.open.has(key)) li.classList.remove('open'); });
+    } else {
+      // Fermeture : le fond revient au beige en fondu pendant que le détail se replie (« closing »
+      // garde le détail affiché le temps de l'animation)
+      li.classList.remove('open');
+      li.classList.add('closing');
+      slideDetail(detail, false, () => { if (!state.open.has(key)) li.classList.remove('closing'); });
+    }
     if (state.view === 'map' && key.startsWith('t') && opening) cineMap?.focus(key.slice(1));
   });
 

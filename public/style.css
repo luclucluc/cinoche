@@ -91,7 +91,7 @@ a { color: inherit; }
   font-size: var(--fs-text); white-space: nowrap;
 }
 .days button:hover { background: var(--hover); }
-.days button.on { background: var(--active); color: var(--ink); font-weight: 600; }
+.days button.on { background: var(--active); color: var(--ink); }
 .days button { border-left: 0; margin-right: 0; padding-top: 9px; padding-bottom: 9px; }
 .days button:last-child { border-right: 0; }
 .days button:disabled { color: var(--muted); cursor: default; } /* texte grisé, filets inchangés */
@@ -168,14 +168,14 @@ a { color: inherit; }
 .chip:disabled { color: var(--muted); cursor: default; }
 .chip:disabled:hover { background: var(--surface); }
 .chip:disabled::after { opacity: .4; }
-.chip.active { background: var(--active); color: var(--ink); font-weight: 600; }
+.chip.active { background: var(--active); color: var(--ink); }
 .chip.active::after { color: inherit; }
 .seg { display: inline-flex; }
 .seg button {
   border: 1px solid var(--line); margin-right: -1px; background: var(--surface); padding: 5px 10px;
   font-size: var(--fs-text); color: var(--ink); white-space: nowrap;
 }
-.seg button.on { background: var(--active); color: var(--ink); font-weight: 600; }
+.seg button.on { background: var(--active); color: var(--ink); }
 .link { border: 0; background: none; padding: 0; color: inherit; text-decoration: underline; text-underline-offset: 3px; font-size: inherit; }
 /* Croix entourée (même esprit que l'effacement du champ de recherche) */
 .x-circle { width: 13px; height: 13px; flex: none; padding: 0; border: 0; background: none; color: var(--muted); cursor: pointer; }
@@ -251,12 +251,13 @@ main { padding: 0 var(--pad) 0 var(--gutter); min-width: 0; }
 }
 .list-head .cell { border: 0; background: none; color: inherit; font: inherit; letter-spacing: inherit;  padding: 2px 0; }
 .list-head .cell:hover { color: var(--ink); }
-.list-head .cell.on { color: var(--ink); font-weight: 700; text-decoration: underline; text-underline-offset: 4px; }
+.list-head .cell.on { color: var(--ink); text-decoration: underline; text-underline-offset: 4px; }
 
 .item { border-bottom: 1px solid var(--hair); content-visibility: auto; contain-intrinsic-size: auto 74px; } /* films hors écran ni mis en page ni peints : animations fluides */
 /* Chaque fiche va jusqu'aux bords (colonne de filtres → bord de la fenêtre), contenu inchangé */
 .list .item { margin: 0 calc(-1 * var(--pad)) 0 calc(-1 * var(--gutter)); padding: 0 var(--pad) 0 var(--gutter); }
 .item.open { background: var(--active); }
+.list .item { transition: background-color .22s ease; } /* fermeture : retour au fond en fondu */
 .row { width: 100%; padding: 10px 8px; cursor: pointer; }
 .row { scroll-margin-top: calc(var(--header-h, 0px) + 34px); } /* ramené en vue sous l'en-tête et la barre des colonnes */
 /* Un film occupe la hauteur de 2 lignes de filtre (filets partagés : 2 × (h − 1), moins le filet du bas) */
@@ -269,6 +270,13 @@ main { padding: 0 var(--pad) 0 var(--gutter); min-width: 0; }
 #results:not(.map-mode) .row:hover { box-shadow: calc(-1 * var(--gutter)) 0 0 var(--hover), var(--pad) 0 0 var(--hover); }
 .item.open { border-bottom-color: var(--line); }
 .item.open > .row { background: transparent; }
+/* Film ouvert : sa ligne reste visible sous l'en-tête des colonnes pendant qu'on parcourt les séances */
+#results:not(.map-mode) .item.open > .film-row,
+#results:not(.map-mode) .item.closing > .film-row {
+  position: sticky; top: calc(var(--header-h, 0px) + var(--bar-h, 0px) + var(--subhead-h)); z-index: 1;
+  background: var(--bg); box-shadow: calc(-1 * var(--gutter)) 0 0 var(--bg), var(--pad) 0 0 var(--bg);
+}
+#results:not(.map-mode) .item.open > .film-row:hover { background: var(--hover); box-shadow: calc(-1 * var(--gutter)) 0 0 var(--hover), var(--pad) 0 0 var(--hover); }
 .poster { width: var(--poster); aspect-ratio: 3 / 4; background: var(--hair) center / cover; outline: 1px solid var(--line); outline-offset: -1px; }
 .poster.cine { display: grid; place-items: center; background: var(--surface); font-size: var(--fs-text); }
 .title { font: 600 var(--fs-title)/1.2 var(--sans); letter-spacing: -0.01em; }
@@ -305,7 +313,8 @@ main { padding: 0 var(--pad) 0 var(--gutter); min-width: 0; }
 
 /* Détail */
 .detail { padding: 6px 8px 24px calc(var(--poster) + 28px); display: none; background: var(--active); }
-.item.open .detail { display: block; }
+.item.open .detail, .item.closing .detail { display: block; }
+.item.closing .detail { background: transparent; transition: background-color .22s ease; }
 .film-head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(180px, 240px); gap: 0 32px; margin-bottom: 6px; }
 .film-side { border-left: 1px solid var(--faint); padding-left: 16px; }
 .film-side ul { list-style: none; padding: 0; }
@@ -365,6 +374,8 @@ select { appearance: none; border: 1px solid var(--line); background: var(--surf
 #results.map-mode .row { padding: 12px 16px; }
 #results.map-mode .group-title { margin: 0; padding: 18px 16px 6px; }
 #results.map-mode .group-title:first-child { padding-top: 8px; } /* premier cinéma collé en haut */
+/* Cinéma ouvert : son nom reste visible en haut pendant qu'on parcourt ses films */
+#results.map-mode .cine-item.open > .row { position: sticky; top: var(--header-h, 0px); z-index: 2; background: var(--active); border-bottom: 1px solid var(--hair); }
 /* Cinéma : nom et adresse à gauche ; distance et nombre de films à droite */
 #results.map-mode .cine-item .row { grid-template-columns: minmax(0, 1fr) auto; }
 .cine-item .title .cine-addr { font: var(--fs-text)/1.25 var(--sans); color: var(--muted); margin-top: 1px; }
@@ -526,7 +537,7 @@ body.no-scroll { overflow: hidden; }
 .seen-btn { display: inline-flex; align-items: center; gap: 6px; }
 .seen-btn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.2; }
 .seen-btn span:empty { display: none; }
-.fav-btn.on { background: var(--active); color: var(--ink); font-weight: 600; }
+.fav-btn.on { background: var(--active); color: var(--ink); }
 .fav-btn.on svg { fill: currentColor; }
 .seen-list { list-style: none; margin: 0; padding: 0; }
 .seen-item { display: grid; grid-template-columns: 54px minmax(0, 1fr); gap: 14px; padding: 14px 20px; border-bottom: 1px solid var(--hair); }
