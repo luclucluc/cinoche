@@ -589,6 +589,8 @@ function bindControls() {
   });
 
   $('#list').addEventListener('click', (e) => {
+    const pc = e.target.closest('[data-press]');
+    if (pc) { e.stopPropagation(); openPress(pc.dataset.press); return; }
     const mfav = e.target.closest('.mfav');
     if (mfav) {
       e.stopPropagation();
@@ -906,6 +908,8 @@ function ratingCells(m) {
   return `<span class="cells">${visibleRatings().map((r) => {
     const v = m[r.key];
     if (v == null) return `<span class="cell na" title="${esc(r.title)}">–</span>`;
+    // note presse : ouvre la fenêtre des critiques (extraits, notes, liens vers les articles)
+    if (r.key === 'press') return `<button class="cell press-cell${v >= r.hi ? ' hi' : ''}" data-press="${m.id}" title="Voir les critiques presse"><i>${esc(r.short || r.label)}</i>${esc(r.fmt(v))}</button>`;
     return `<span class="cell${v >= r.hi ? ' hi' : ''}" title="${esc(r.title)}"><i>${esc(r.short || r.label)}</i>${esc(r.fmt(v))}</span>`;
   }).join('')}</span>`;
 }
@@ -1032,11 +1036,11 @@ function alignInfoCols(root = document) {
     if (!wide || !who || !year || !year.offsetWidth) { head.style.gridTemplateColumns = ''; continue; }
     const gap = parseFloat(getComputedStyle(head).columnGap) || 0;
     const box = head.getBoundingClientRect();
-    const r = document.createRange(); r.selectNodeContents(year); // le texte de l'année, pas sa cellule
-    const yl = year.textContent.trim() ? r.getBoundingClientRect().left : year.getBoundingClientRect().left;
-    const x1 = who.getBoundingClientRect().left - box.left, x2 = yl - box.left;
-    const c1 = x1 - gap, c2 = x2 - x1 - gap, c3 = box.width - x2;
-    head.style.gridTemplateColumns = c1 > 200 && c2 > 80 && c3 > 60 ? `${Math.round(c1)}px ${Math.round(c2)}px ${Math.round(c3)}px` : '';
+    // infos : du début de la réalisation jusqu'au bord droit de l'année (texte aligné à droite) ;
+    // liens : le reste, collés à droite
+    const x1 = who.getBoundingClientRect().left - box.left, x2 = year.getBoundingClientRect().right - box.left;
+    const c1 = x1 - gap, c2 = x2 - x1, c3 = box.width - x2 - gap;
+    head.style.gridTemplateColumns = c1 > 200 && c2 > 80 && c3 > 80 ? `${Math.round(c1)}px ${Math.round(c2)}px ${Math.round(c3)}px` : '';
   }
 }
 window.addEventListener('resize', () => alignInfoCols());
@@ -1579,3 +1583,36 @@ function bindPrefs() {
     location.href = location.pathname;
   };
 }
+
+// ------------------------------------------------------------------ Critiques presse (fenêtre)
+
+let PRESS = null; // data/press.json, chargé à la première ouverture
+async function loadPress() {
+  if (!PRESS) PRESS = fetch('data/press.json', { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
+  return PRESS;
+}
+const stars = (n) => (n == null ? '' : '★'.repeat(Math.round(n)) + '☆'.repeat(5 - Math.round(n)));
+
+async function openPress(id) {
+  const m = P.movies[id];
+  const box = $('#pressPanel');
+  $('#pressTitle').textContent = `Critiques presse · ${m.title}`;
+  $('#pressBody').innerHTML = '<p class="hint">Chargement…</p>';
+  showPanel(box, $('#pressOverlay'));
+  box.classList.add('modal');
+  $('#pressClose').focus({ preventScroll: true });
+  const reviews = (await loadPress())[id] || [];
+  const avg = m.press != null ? `<p class="press-avg"><b>${m.press.toFixed(1)}</b> / 5 · moyenne de ${reviews.length || '…'} critique${reviews.length > 1 ? 's' : ''} (Allociné)</p>` : '';
+  $('#pressBody').innerHTML = reviews.length
+    ? avg + `<ul class="press-list">${reviews.map((r) => `<li>
+        <div class="press-head"><b>${esc(r.m)}</b><span class="press-stars" title="${r.n ?? '–'} / 5">${stars(r.n)}</span></div>
+        <p class="press-text">« ${esc(r.t)} »</p>
+        <div class="press-foot">${r.a ? `<span>${esc(r.a)}</span>` : ''}${r.u ? `<a class="pill-link" href="${esc(r.u)}" target="_blank" rel="noopener">Lire l’article</a>` : ''}</div>
+      </li>`).join('')}</ul>`
+    : avg + `<p class="hint">Les extraits de critiques ne sont pas encore disponibles pour ce film. <a href="https://www.allocine.fr/film/fichefilm-${m.allocineId}/critiques/presse/" target="_blank" rel="noopener">Voir sur Allociné ↗</a></p>`;
+}
+function closePress() { hidePanel($('#pressPanel'), $('#pressOverlay')); }
+document.addEventListener('click', (e) => {
+  if (e.target.closest('#pressClose') || e.target.id === 'pressOverlay') closePress();
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#pressPanel').hidden) closePress(); });

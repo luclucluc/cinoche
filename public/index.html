@@ -88,6 +88,16 @@
       <ol class="seen-list" id="seenList"></ol>
     </aside>
 
+    <!-- Critiques presse (fenêtre ouverte depuis la note presse) -->
+    <div class="prefs-overlay" id="pressOverlay" hidden></div>
+    <aside class="prefs press-panel" id="pressPanel" role="dialog" aria-modal="true" aria-labelledby="pressTitle" hidden>
+      <div class="prefs-head">
+        <b id="pressTitle">Critiques presse</b>
+        <button class="icon-btn" id="pressClose" aria-label="Fermer">✕</button>
+      </div>
+      <div id="pressBody"></div>
+    </aside>
+
     <!-- Préférences -->
     <div class="prefs-overlay" id="prefsOverlay" hidden></div>
     <aside class="prefs" id="prefs" role="dialog" aria-modal="true" aria-labelledby="prefsTitle" hidden>

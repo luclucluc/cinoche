@@ -366,6 +366,11 @@ main { padding: 0 var(--pad) 0 var(--gutter); min-width: 0; }
 /* Liens externes de la fiche : pastilles grises empilées dans la dernière colonne */
 .film-links .link-pills { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin: 0; }
 .film-links .link-pills li + li { margin-top: 0; }
+/* Grand écran, vue liste : infos alignées à droite sous l'année, liens collés à droite */
+@media (min-width: 861px) {
+  #results:not(.map-mode) .facts { text-align: right; }
+  #results:not(.map-mode) .film-links .link-pills { align-items: flex-end; }
+}
 /* Liens externes : bouton à contour arrondi, flèche ↗ à droite */
 .link-pills a, .pill-link { display: inline-flex; align-items: center; gap: 4px; padding: 3px 7px 3px 9px; border: 1px solid var(--muted); background: transparent; color: var(--muted); font: var(--fs-small) var(--sans); text-decoration: none; }
 .link-pills a::after, .pill-link::after { content: ''; width: 9px; height: 9px; flex: none; background: currentColor;
@@ -639,3 +644,19 @@ body.no-scroll { overflow: hidden; }
 
 /* « e » de 19e en exposant sans décaler l'interligne */
 sup { font-size: .7em; line-height: 0; vertical-align: super; }
+
+/* Critiques presse : fenêtre centrée, ouverte depuis la note presse */
+.press-cell { border: 0; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 4px; }
+.press-cell.hi { text-decoration: underline; text-decoration-thickness: 1.5px; }
+.press-cell:hover { text-decoration-style: solid; }
+.prefs.press-panel { top: 6vh; bottom: auto; left: 50%; right: auto; width: min(640px, 94vw); max-height: 88vh; border: 1px solid var(--line); transform: translate(-50%, 16px); opacity: 0; transition: transform .25s ease, opacity .25s ease; }
+.prefs.press-panel.open { transform: translate(-50%, 0); opacity: 1; }
+.press-avg { margin: 0; padding: 14px 20px; border-bottom: 1px solid var(--hair); font-size: var(--fs-text); color: var(--muted); }
+.press-avg b { color: var(--ink); font-size: var(--fs-title); margin-right: 2px; }
+.press-list { list-style: none; margin: 0; padding: 0; }
+.press-list li { padding: 14px 20px; border-bottom: 1px solid var(--hair); }
+.press-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.press-stars { letter-spacing: 1px; white-space: nowrap; }
+.press-text { margin: 6px 0 8px; font: var(--fs-text)/1.5 var(--sans); }
+.press-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: var(--fs-small); color: var(--muted); }
+#pressBody > .hint { padding: 14px 20px; }
