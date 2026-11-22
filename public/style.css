@@ -130,6 +130,15 @@ a { color: inherit; }
 /* Seuls les filtres défilent : les boutons du bas restent toujours visibles */
 .sidebar > .filters { flex: 0 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: thin; }
 .filters > * { flex-shrink: 0; }
+/* VO / VF et PDF : hors de la zone qui défile, juste au-dessus des boutons du bas */
+.side-tools { margin-top: auto; }
+.side-tools + .side-actions { margin-top: -1px; }
+.side-tools #version { display: flex; }
+.side-tools #version button { flex: 1; height: var(--filter-h); }
+@media (min-width: 861px) {
+  .side-tools #version button:first-child { border-left: 0; }
+  .side-tools #version button:last-child { border-right: 0; margin-right: 0; }
+}
 /* Films vus et Compte, en bas de la colonne */
 .side-actions { display: flex; margin-top: auto; }
 .side-actions .text-btn { flex: 1; height: 40px; border-left: 0; border-bottom: 0; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
@@ -441,9 +450,20 @@ body.no-scroll { overflow: hidden; }
 }
 .prefs.open { transform: none; }
 @media (prefers-reduced-motion: reduce) { .prefs, .prefs-overlay { transition: none; } }
-.prefs-head { position: sticky; top: 0; z-index: 1; display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: var(--fs-text); }
-.prefs-head .icon-btn { margin: 0; width: 32px; height: 32px; font-size: var(--fs-text); }
+.prefs-head {
+  /* même hauteur que la bande des jours */
+  position: sticky; top: 0; z-index: 1; display: flex; justify-content: space-between; align-items: stretch;
+  box-sizing: border-box; height: var(--header-h, 39px); padding: 0 0 0 20px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: var(--fs-text);
+}
+.prefs-head > b { align-self: center; }
+.prefs-head .icon-btn { margin: 0; width: var(--header-h, 39px); height: auto; border: 0; border-left: 1px solid var(--line); font-size: var(--fs-text); }
 .prefs section { padding: 18px 20px; border-bottom: 1px solid var(--hair); }
+/* Onglets du volet Compte : collés sous l'en-tête, même dessin que la bande des jours */
+.prefs-tabs { position: sticky; top: var(--prefs-head-h, 57px); z-index: 1; display: flex; background: var(--bg); border-bottom: 1px solid var(--line); }
+.prefs-tabs button { flex: 1 1 0; border: 0; border-right: 1px solid var(--line); background: var(--surface); padding: 9px 6px; font-size: var(--fs-text); color: var(--ink); }
+.prefs-tabs button:last-child { border-right: 0; }
+.prefs-tabs button:hover { background: var(--hover); }
+.prefs-tabs button.on { background: var(--active); font-weight: 600; }
 .prefs h3 { margin: 0 0 10px; font-size: var(--fs-small); font-weight: 500; color: var(--muted); }
 .prefs h3::before { content: '+ '; color: var(--ink); }
 .prefs .addr { max-width: none; }

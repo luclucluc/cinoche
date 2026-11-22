@@ -41,6 +41,9 @@
           <button class="chip" data-f="genres"></button>
           <button class="chip" data-f="formats"></button>
           <button class="chip" data-f="sort"></button>
+        </div>
+        <!-- Toujours visibles au-dessus des boutons du bas, même quand un filtre est ouvert -->
+        <div class="side-tools">
           <div class="seg" id="version" role="group" aria-label="Version">
             <button data-v="" class="on">VO & VF</button>
             <button data-v="VO">VO</button>
@@ -93,8 +96,13 @@
         <b id="prefsTitle">Compte</b>
         <button class="icon-btn" id="prefsClose" aria-label="Fermer">✕</button>
       </div>
+      <nav class="prefs-tabs" id="prefsTabs" role="tablist" aria-label="Rubriques du compte">
+        <button role="tab" data-ptab="affichage" class="on" aria-selected="true">Affichage</button>
+        <button role="tab" data-ptab="masquages" aria-selected="false">Masquages<span id="hideCount"></span></button>
+        <button role="tab" data-ptab="donnees" aria-selected="false">Données</button>
+      </nav>
 
-      <section>
+      <section data-ppanel="affichage">
         <h3>Apparence</h3>
         <div class="seg" id="themeSeg">
           <button data-theme="light">Clair</button>
@@ -103,12 +111,12 @@
         </div>
       </section>
 
-      <section>
+      <section data-ppanel="affichage">
         <h3>Notes affichées</h3>
         <div class="checks" id="ratingList"></div>
       </section>
 
-      <section>
+      <section data-ppanel="masquages" hidden>
         <h3>Masquer des films par acteur ou réalisateur</h3>
         <div class="addr">
           <input id="personInput" type="search" placeholder="Nom d’un acteur ou d’un réalisateur…" autocomplete="off" />
@@ -118,12 +126,12 @@
         <p class="hint" id="peopleHint"></p>
       </section>
 
-      <section>
+      <section data-ppanel="masquages" hidden>
         <h3>Masquer des enseignes</h3>
         <div class="checks" id="chainList"></div>
       </section>
 
-      <section>
+      <section data-ppanel="donnees" hidden>
         <h3>Transférer mes préférences</h3>
         <p class="hint">Exportez vos préférences pour les retrouver sur un autre navigateur ou un autre ordinateur.</p>
         <div class="btns">
@@ -136,13 +144,13 @@
         <p class="hint" id="ioStatus"></p>
       </section>
 
-      <section>
+      <section data-ppanel="donnees" hidden>
         <p class="hint">Vos préférences (favoris, position, thème, notes, masquages…) restent dans ce navigateur : rien n’est envoyé à un serveur.</p>
         <div class="btns"><button class="btn" id="forget">Tout effacer</button></div>
       </section>
 
       <!-- Informations (ancien pied de page) -->
-      <footer class="prefs-foot">
+      <footer class="prefs-foot" data-ppanel="donnees" hidden>
         <span id="updated"></span><br />
         Données : Allociné · Adresses : BAN · Carte : OpenFreeMap / OpenStreetMap
       </footer>

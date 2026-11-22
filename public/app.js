@@ -1242,6 +1242,8 @@ function openPrefs() {
   closePop();
   renderPrefs();
   showPanel($('#prefs'), $('#prefsOverlay'));
+  // les onglets s'accrochent juste sous l'en-tête du volet (hauteur réelle)
+  $('#prefs').style.setProperty('--prefs-head-h', $('#prefs .prefs-head').offsetHeight + 'px');
   $('#prefsClose').focus({ preventScroll: true });
 }
 function closePrefs() {
@@ -1265,12 +1267,14 @@ function renderPrefs() {
   for (const b of $('#themeSeg').children) b.classList.toggle('on', b.dataset.theme === pref);
 
   const names = [...state.hiddenPeople].sort((a, b) => a.localeCompare(b, 'fr'));
+  const nHidden = state.hiddenPeople.size + state.hiddenChains.size;
+  $('#hideCount').textContent = nHidden ? ` · ${nHidden}` : '';
   $('#hiddenPeople').innerHTML = names.map((n) => `<li><span>${esc(n)}</span><button data-unhide="${esc(n)}" aria-label="Ne plus masquer ${esc(n)}">✕</button></li>`).join('');
   const films = Object.values(P.movies).filter(isHiddenMovie).length;
   $('#peopleHint').textContent = names.length ? `${films} film${films > 1 ? 's' : ''} du programme masqué${films > 1 ? 's' : ''}.` : 'Aucun nom masqué.';
 
   $('#ratingList').innerHTML = RATINGS.map(
-    (r) => `<label class="pop-opt"><input type="checkbox" value="${r.key}" ${state.showRatings.has(r.key) ? 'checked' : ''} /><span>${esc(r.title.replace(/^Note /, ''))}</span></label>`
+    (r) => `<label class="pop-opt"><input type="checkbox" value="${r.key}" ${state.showRatings.has(r.key) ? 'checked' : ''} /><span>${esc(r.title.replace(/^Note /, '').replace(/^./, (c) => c.toUpperCase()))}</span></label>`
   ).join('');
   const count = (id) => Object.values(P.theaters).filter((t) => t.chain === id).length;
   $('#chainList').innerHTML = CHAINS.map(
@@ -1300,7 +1304,22 @@ function importPrefs(data) {
   location.reload();
 }
 
+// Onglets du volet Compte
+function setPrefsTab(name) {
+  for (const b of document.querySelectorAll('#prefsTabs [data-ptab]')) {
+    const on = b.dataset.ptab === name;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-selected', on);
+  }
+  for (const el of document.querySelectorAll('#prefs [data-ppanel]')) el.hidden = el.dataset.ppanel !== name;
+  $('#prefs').scrollTop = 0;
+}
+
 function bindPrefs() {
+  $('#prefsTabs').onclick = (e) => {
+    const b = e.target.closest('[data-ptab]');
+    if (b) setPrefsTab(b.dataset.ptab);
+  };
   $('#prefsBtn').onclick = openPrefs;
   $('#prefsClose').onclick = closePrefs;
   $('#prefsOverlay').onclick = closePrefs;
