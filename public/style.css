@@ -367,10 +367,10 @@ main { padding: 0 var(--pad) 0 var(--gutter); min-width: 0; }
 .film-links .link-pills { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin: 0; }
 .film-links .link-pills li + li { margin-top: 0; }
 /* Liens externes : bouton à contour arrondi, flèche ↗ à droite */
-.link-pills a, .pill-link { display: inline-flex; align-items: center; gap: 8px; padding: 3px 7px 3px 9px; border: 1px solid var(--muted); background: transparent; color: var(--muted); font: var(--fs-small) var(--sans); text-decoration: none; }
+.link-pills a, .pill-link { display: inline-flex; align-items: center; gap: 4px; padding: 3px 7px 3px 9px; border: 1px solid var(--muted); background: transparent; color: var(--muted); font: var(--fs-small) var(--sans); text-decoration: none; }
 .link-pills a::after, .pill-link::after { content: ''; width: 9px; height: 9px; flex: none; background: currentColor;
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M1 9 9 1M3 1h6v6' fill='none' stroke='black' stroke-width='1.3'/%3E%3C/svg%3E") center / contain no-repeat;
-          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M1 9 9 1M3 1h6v6' fill='none' stroke='black' stroke-width='1.3'/%3E%3C/svg%3E") center / contain no-repeat; }
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M1 9 9 1M3 1h6v6' fill='none' stroke='black' stroke-width='0.9'/%3E%3C/svg%3E") center / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M1 9 9 1M3 1h6v6' fill='none' stroke='black' stroke-width='0.9'/%3E%3C/svg%3E") center / contain no-repeat; }
 .link-pills a:hover, .pill-link:hover { background: var(--hover); }
 .synopsis { font: var(--fs-text)/1.55 var(--sans); color: var(--ink); margin: 0 0 12px; max-width: 80ch; }
 .place { display: grid; grid-template-columns: minmax(180px, 260px) 1fr; gap: 12px; padding: 9px 0; border-top: 1px solid var(--hair); }
@@ -636,3 +636,6 @@ body.no-scroll { overflow: hidden; }
   .chip-wrap:has(.chip-clear:not([hidden])) .chip { padding-left: 28px; }
   .chip-clear { left: 9px; }
 }
+
+/* « e » de 19e en exposant sans décaler l'interligne */
+sup { font-size: .7em; line-height: 0; vertical-align: super; }

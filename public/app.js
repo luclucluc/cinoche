@@ -180,6 +180,10 @@ function parisNow() {
   return { date, time };
 }
 
+// Adresse / arrondissement : sans « arrondissement », 19ème → 19e, le « e » / « er » en exposant (HTML échappé)
+// (avec un code postal, l'arrondissement qui suit est redondant : on le retire)
+const fmtPlace = (x) => esc(String(x || '').replace(/(\b\d{5}\b.*?)\s+\d{1,2}\s*(?:ème|eme|è|er|e)(?=\s|$)(?:\s*arrondissement)?/i, '$1').replace(/\s*arrondissement\b/gi, ''))
+  .replace(/\b(\d{1,2})\s*(?:ème|eme|è|e)\b/g, '$1<sup>e</sup>').replace(/\b(1)\s*er\b/g, '$1<sup>er</sup>');
 const dayLabel = (d, today = parisNow().date) => {
   const dt = new Date(d + 'T12:00:00');
   const diff = Math.round((dt - new Date(today + 'T12:00:00')) / 864e5);
@@ -939,7 +943,7 @@ function theaterRow(key, t, shows) {
   const sel = state.selected === t.id ? ' sel' : '';
   return `<li class="item cine-item${open}${sel}" data-key="${key}" id="${key}">
     <div class="row" role="button" tabindex="0">
-      <span class="title">${esc(t.name)}<small class="cine-addr">${esc(t.address)}</small></span>
+      <span class="title">${esc(t.name)}<small class="cine-addr">${fmtPlace(t.address)}</small></span>
       <span class="cine-meta">${dist(t) != null ? `<b class="dist">${fmtDistance(dist(t))}</b>` : ''}<span>${nFilms} film${nFilms > 1 ? 's' : ''}</span></span>
     </div>
     <div class="detail"></div>
@@ -999,7 +1003,7 @@ function fillDetail(li) {
       `<ul class="credits links link-pills">${links.map((l) => `<li>${l}</li>`).join('')}</ul>` +
       `</aside></div>` +
       places
-        .map(({ t, ss }) => `<div class="place"><div class="place-name">${state.favs.has(t.id) ? '★ ' : ''}${esc(t.name)}<small>${esc(t.address || t.area)}${dist(t) != null ? ` · ${fmtDistance(dist(t))}` : ''}</small><a class="pill-link route-btn" href="${routeUrl(t)}" target="_blank" rel="noopener">Itinéraire</a></div>${timeChips(ss, t.id)}</div>`)
+        .map(({ t, ss }) => `<div class="place"><div class="place-name">${state.favs.has(t.id) ? '★ ' : ''}${esc(t.name)}<small>${fmtPlace(t.address || t.area)}${dist(t) != null ? ` · ${fmtDistance(dist(t))}` : ''}</small><a class="pill-link route-btn" href="${routeUrl(t)}" target="_blank" rel="noopener">Itinéraire</a></div>${timeChips(ss, t.id)}</div>`)
         .join('');
   } else {
     const t = it.t;
@@ -1152,7 +1156,7 @@ function printProgramme() {
     blocks.push({
       head: `<b>${esc(m.title)}</b>${info}`,
       cont: `<b>${esc(m.title)}</b><small>(suite)</small>`,
-      rows: places.map(({ t, ss }) => `<td class="pcine">${esc(t.name)}<small>${esc(t.area)}</small></td><td class="ptimes">${times(ss)}</td>`),
+      rows: places.map(({ t, ss }) => `<td class="pcine">${esc(t.name)}<small>${fmtPlace(t.area)}</small></td><td class="ptimes">${times(ss)}</td>`),
     });
   }
 
