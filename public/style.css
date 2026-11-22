@@ -493,7 +493,7 @@ select { appearance: none; border: 1px solid var(--line); background: var(--surf
 #results.map-mode .row.film-row, #results.map-mode .list-head { grid-template-columns: var(--poster) minmax(0, 1fr) minmax(0, 1fr) 48px auto; }
 #results.map-mode .list-head { margin: 0; padding: 0 16px; }
 
-.map-box { position: sticky; top: calc(var(--header-h, 200px) + var(--bar-h, 0px)); height: calc(100vh - var(--header-h, 200px) - var(--bar-h, 0px)); min-height: 360px; border-right: 1px solid var(--line); }
+.map-box { position: sticky; top: calc(var(--header-h, 200px) + var(--bar-h, 0px)); height: calc(100vh - var(--header-h, 200px) - var(--bar-h, 0px)); min-height: 360px; border-right: 1px solid var(--line); isolation: isolate; } /* les calques Leaflet (z-index 400 à 1000) restent sous le menu et les panneaux */
 #map { height: 100%; background: var(--hair); }
 #results.map-mode .detail { padding: 4px 16px 22px; }
 /* Colonne étroite : film au-dessus, horaires en ligne sur toute la largeur (comme en mode liste) */
@@ -594,10 +594,10 @@ body.no-scroll { overflow: hidden; }
   .list-head { display: none; }
   .row, #results.map-mode .row, .row.film-row, #results.map-mode .row.film-row { grid-template-columns: var(--poster) minmax(0, 1fr); gap: 4px 14px; align-items: start; }
   .year-col { display: none; }
-  .film-row .who .year { display: inline; }
+  .film-row .who .year { display: inline; margin-left: auto; padding-left: 10px; } /* année calée à droite */
   .poster { grid-row: span 3; }
   :root { --fs-title: 17px; }
-  .who { flex-direction: row; gap: 10px; font-size: var(--fs-text); }
+  .who { flex-direction: row; gap: 10px; align-items: baseline; font-size: var(--fs-text); }
   .cells { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; margin-top: 4px; }
   /* Notes sans cadre ni fond : logo gris (comme l'en-tête des colonnes sur ordinateur) puis la note */
   .cell { display: inline-flex; align-items: center; gap: 5px; font-size: var(--fs-text); border: 0; padding: 0; background: none; color: inherit; }
