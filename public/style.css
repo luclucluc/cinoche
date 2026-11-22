@@ -602,7 +602,9 @@ body.no-scroll { overflow: hidden; }
   .cell.hi i { color: inherit; }
   .side { grid-column: 2; justify-content: flex-start; }
   .detail { padding-left: 8px; }
-  .film-head { grid-template-columns: 1fr; }
+  /* synopsis sur toute la largeur, puis infos et liens côte à côte */
+  .film-head, #results.map-mode .film-head { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 16px; }
+  .film-main { grid-column: 1 / -1; }
   .film-side { border-left: 0; padding-left: 0; }
   .place { grid-template-columns: 1fr; gap: 6px; }
     #results.map-mode { grid-template-columns: 1fr; gap: 0; margin-left: calc(-1 * var(--pad)); }
