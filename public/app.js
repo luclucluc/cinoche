@@ -5,6 +5,7 @@ import { CineMap, distance, fmtDistance, searchAddress } from './map.js';
 import { CARDS, acceptsCard } from './cards.js';
 import { CHAINS, chainOf } from './chains.js';
 import * as sync from './sync.js';
+import { LOGOS } from './logos.js';
 
 // Lien de synchronisation d'un autre appareil (#sync=CLÉ) : capturé avant que l'URL ne soit
 // réécrite par les filtres, puis retiré de la barre d'adresse
@@ -27,13 +28,13 @@ const store = {
 
 // Ordre et présentation des notes (comme paris-cine.info)
 const RATINGS = [
-  { key: 'imdb', label: 'IMDb', title: 'Note IMDb (/10)', fmt: (v) => v.toFixed(1), hi: 7.5, url: (m) => m.imdbId && `https://www.imdb.com/title/${m.imdbId}/` },
-  { key: 'press', label: 'Presse', title: 'Note presse Allociné (/5)', fmt: (v) => v.toFixed(1), hi: 4, url: (m) => FILM_URL(m.allocineId) },
-  { key: 'spect', label: 'Spect.', title: 'Note spectateurs Allociné (/5)', fmt: (v) => v.toFixed(1), hi: 4, url: (m) => FILM_URL(m.allocineId) },
-  { key: 'sc', label: 'SensCritique', short: 'SC', title: 'Note SensCritique (/10)', fmt: (v) => v.toFixed(1), hi: 7.5, url: (m) => m.scUrl },
-  { key: 'lb', label: 'Letterboxd', short: 'LB', title: 'Note Letterboxd (/5)', fmt: (v) => v.toFixed(1), hi: 3.8, url: (m) => m.lbUrl },
-  { key: 'mc', label: 'Metacritic', short: 'MC', title: 'Metascore (/100)', fmt: (v) => String(v), hi: 75, url: (m) => m.mcUrl },
-  { key: 'rt', label: 'Rotten T.', short: 'RT', title: 'Tomatometer (% de critiques positives)', fmt: (v) => v + '%', hi: 90, url: (m) => m.rtUrl },
+  { key: 'imdb', label: 'IMDb', title: 'Note IMDb (/10)', fmt: (v) => v.toFixed(1), hi: 7.5, lo: 6, url: (m) => m.imdbId && `https://www.imdb.com/title/${m.imdbId}/` },
+  { key: 'press', label: 'Presse', title: 'Note presse Allociné (/5)', fmt: (v) => v.toFixed(1), hi: 4, lo: 3, url: (m) => FILM_URL(m.allocineId) },
+  { key: 'spect', label: 'Spect.', title: 'Note spectateurs Allociné (/5)', fmt: (v) => v.toFixed(1), hi: 4, lo: 3, url: (m) => FILM_URL(m.allocineId) },
+  { key: 'sc', label: 'SensCritique', short: 'SC', title: 'Note SensCritique (/10)', fmt: (v) => v.toFixed(1), hi: 7.5, lo: 6, url: (m) => m.scUrl },
+  { key: 'lb', label: 'Letterboxd', short: 'LB', title: 'Note Letterboxd (/5)', fmt: (v) => v.toFixed(1), hi: 3.8, lo: 3, url: (m) => m.lbUrl },
+  { key: 'mc', label: 'Metacritic', short: 'MC', title: 'Metascore (/100)', fmt: (v) => String(v), hi: 75, lo: 55, url: (m) => m.mcUrl },
+  { key: 'rt', label: 'Rotten T.', short: 'RT', title: 'Tomatometer (% de critiques positives)', fmt: (v) => v + '%', hi: 90, lo: 60, url: (m) => m.rtUrl },
 ];
 
 // ------------------------------------------------------------------ Filtres
@@ -52,15 +53,25 @@ const formatsOf = (s) => (s[4] ? s[4].match(FORMAT_RE) || [] : []);
 
 const DEPTS = { 92: 'Hauts-de-Seine', 93: 'Seine-Saint-Denis', 94: 'Val-de-Marne' };
 
-const HOURS = [
-  ['0', 'Toutes'],
-  ['now', 'À partir de maintenant'],
-  ['m', 'Matin (avant 12 h)'],
-  ['a', 'Après-midi (12 h – 18 h)'],
-  ['18', 'Après 18 h'],
-  ['20', 'Après 20 h'],
-  ['22', 'Après 22 h'],
-];
+// Heures : plage début – fin choisie avec un curseur à deux poignées, de 8 h à minuit (pas de 30 min).
+// state.hours = '0' (toutes) ou 'début-fin' en heures (ex. '18-22.5') ; les bornes extrêmes sont ouvertes.
+const H_MIN = 8, H_MAX = 24, H_STEP = 0.5;
+const LEGACY_HOURS = { now: '0', m: '8-12', a: '12-18', 18: '18-24', 20: '20-24', 22: '22-24' };
+function hoursRange(v = state.hours) {
+  const m = /^(\d+(?:\.5)?)-(\d+(?:\.5)?)$/.exec(LEGACY_HOURS[v] ?? v);
+  if (!m) return [H_MIN, H_MAX];
+  const a = Math.min(Math.max(+m[1], H_MIN), H_MAX - H_STEP), b = Math.max(Math.min(+m[2], H_MAX), a + H_STEP);
+  return [a, b];
+}
+const hoursValue = (a, b) => (a <= H_MIN && b >= H_MAX ? '0' : `${a}-${b}`);
+const fmtHour = (h) => (h >= 24 ? 'minuit' : `${Math.floor(h)} h${h % 1 ? ' 30' : ''}`);
+function hoursLabel(v = state.hours) {
+  const [a, b] = hoursRange(v);
+  if (a <= H_MIN && b >= H_MAX) return 'Toutes';
+  if (b >= H_MAX) return `À partir de ${fmtHour(a)}`;
+  if (a <= H_MIN) return `Avant ${fmtHour(b)}`;
+  return `${fmtHour(a)} – ${fmtHour(b)}`;
+}
 const sortOptions = () => [
   ['copies', 'Plus de cinémas'],
   ...visibleRatings().map((r) => [r.key, `Note ${r.label}`]),
@@ -212,7 +223,7 @@ const FILTERS = {
     label: 'Sélection', single: true, def: 'all', value: () => state.tab, set: (v) => (state.tab = v),
     options: () => [['all', 'Tous les films'], ['new', 'Nouveautés'], ['classic', 'Classiques'], ['retro', 'Rétrospectives']],
   },
-  hours: { label: 'Heures', single: true, options: () => HOURS, value: () => state.hours, set: (v) => (state.hours = v), def: '0' },
+  hours: { label: 'Heures', single: true, options: () => [], value: () => state.hours, set: (v) => (state.hours = v), def: '0', short: (v) => hoursLabel(v) },
   zone: {
     label: 'Lieu',
     single: true,
@@ -314,9 +325,10 @@ function openPop(key, chip, animate = true) {
       ? ''
       : `<div class="pop-head"><b>${esc(f.label)}</b>${f.single ? '' : '<button class="link" data-action="clear">Effacer</button>'}</div>`) +
     (key === 'zone' ? nearBlock() : '') +
+    (key === 'hours' ? hoursBlock() : '') +
     (f.search ? `<input class="pop-search" type="search" placeholder="Rechercher…" />` : '') +
     (f.note ? `<p class="pop-note">${esc(f.note)}</p>` : '') +
-    `<ul class="pop-list">${rows}</ul>`;
+    (rows ? `<ul class="pop-list">${rows}</ul>` : '');
   pop.hidden = false;
   pop.style.height = pop.style.overflow = pop.style.transition = ''; // annule une animation en cours
   const inline = !!chip.closest('.sidebar');
@@ -334,6 +346,19 @@ function openPop(key, chip, animate = true) {
   for (const c of document.querySelectorAll('.chip')) c.classList.toggle('open', c === chip);
   if (inline && animate) slide(pop, 'open');
   pop.querySelector('.pop-search')?.focus({ preventScroll: true });
+}
+// Curseur à deux poignées du filtre Heures (deux curseurs superposés)
+function hoursBlock() {
+  const [a, b] = hoursRange();
+  const pct = (h) => ((h - H_MIN) / (H_MAX - H_MIN)) * 100;
+  return `<div class="pop-hours">
+    <output class="pop-hours-val">${esc(hoursLabel())}</output>
+    <div class="dual-range" style="--a:${pct(a)}%;--b:${pct(b)}%">
+      <input type="range" class="pop-hours-range" data-end="a" min="${H_MIN}" max="${H_MAX}" step="${H_STEP}" value="${a}" aria-label="Début" />
+      <input type="range" class="pop-hours-range" data-end="b" min="${H_MIN}" max="${H_MAX}" step="${H_STEP}" value="${b}" aria-label="Fin" />
+    </div>
+    <div class="pop-range-scale"><span>8 h</span><span>12 h</span><span>16 h</span><span>20 h</span><span>minuit</span></div>
+  </div>`;
 }
 // Bloc « Autour de… » du filtre Lieu : point (position ou adresse) + distance
 // Curseur de distance : 200 m → 10 km, progression quadratique (plus fin sur les petites distances)
@@ -537,6 +562,25 @@ function bindControls() {
   });
   let addrTimer, rangeTimer;
   pop.addEventListener('input', (e) => {
+    // Curseur des heures : les deux poignées ne se croisent pas (écart minimal de 30 min)
+    if (e.target.classList.contains('pop-hours-range')) {
+      const [ia, ib] = pop.querySelectorAll('.pop-hours-range');
+      let a = Number(ia.value), b = Number(ib.value);
+      if (b - a < H_STEP) {
+        if (e.target === ia) a = b - H_STEP; else b = a + H_STEP;
+        if (a < H_MIN) { a = H_MIN; b = H_MIN + H_STEP; }
+        if (b > H_MAX) { b = H_MAX; a = H_MAX - H_STEP; }
+        ia.value = a; ib.value = b;
+      }
+      state.hours = hoursValue(a, b);
+      const pct = (h) => ((h - H_MIN) / (H_MAX - H_MIN)) * 100;
+      const box = pop.querySelector('.dual-range');
+      box.style.setProperty('--a', pct(a) + '%'); box.style.setProperty('--b', pct(b) + '%');
+      pop.querySelector('.pop-hours-val').textContent = hoursLabel();
+      clearTimeout(rangeTimer);
+      rangeTimer = setTimeout(render, 60);
+      return;
+    }
     // Curseur de distance : mise à jour en direct de la valeur, de la liste et de la carte
     if (e.target.classList.contains('pop-radius-range')) {
       state.radius = sliderToRadius(Number(e.target.value));
@@ -656,6 +700,7 @@ function readHash() {
   if (h.get('d') && ((P.dates.includes(h.get('d')) && h.get('d') >= parisNow().date) || h.get('d') === 'week')) state.date = h.get('d');
   for (const k of ['tab', 'view', 'q', 'sort', 'hours']) if (h.has(k)) state[k] = h.get(k);
   if (!['films', 'map'].includes(state.view)) state.view = 'films';
+  state.hours = hoursValue(...hoursRange(state.hours)); // anciennes valeurs (now, m, a, 18…) converties
   state.onlyFavs = h.get('fav') === '1';
   for (const [p, k] of Object.entries(LIST_PARAMS)) if (h.has(p)) state[k] = new Set(h.get(p).split(',').filter(Boolean));
   if (h.has('q')) { $('#q').value = state.q; $('#qClear').hidden = !state.q; }
@@ -702,12 +747,11 @@ const isPreviewShowing = (m, shows) => shows.some((s) => s[5] === 1 || (m.releas
 const isClassic = (m) => ageDays(m) > 730 || (m.year && new Date(refDate()).getFullYear() - m.year >= 3);
 
 function hourOk(time) {
-  switch (state.hours) {
-    case '0': case 'now': return true;
-    case 'm': return time < '12:00';
-    case 'a': return time >= '12:00' && time < '18:00';
-    default: return time >= state.hours.padStart(2, '0') + ':00';
-  }
+  if (state.hours === '0') return true;
+  const [a, b] = hoursRange();
+  let t = Number(time.slice(0, 2)) + Number(time.slice(3, 5)) / 60;
+  if (t < 6) t += 24; // séances après minuit : fin de soirée
+  return (a <= H_MIN || t >= a) && (b >= H_MAX || t <= b);
 }
 
 function filteredShows() {
@@ -815,7 +859,7 @@ function render() {
   // En-tête des colonnes (vue Films)
   $('#listHead').hidden = !films || !shows.length;
   $('#listHead').innerHTML = films
-    ? `<label class="sort-head" title="Trier la liste"><select id="sortSel" aria-label="Tri">${sortOptions().map(([v, l]) => `<option value="${v}"${state.sort === v ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></label><span>Réalisation</span><span class="year-head">Année</span><span class="cells">${visibleRatings().map((r) => `<button class="cell${state.sort === r.key ? ' on' : ''}" data-sort="${r.key}" title="Trier par ${esc(r.title)}">${esc(r.short || r.label)}</button>`).join('')}</span>`
+    ? `<label class="sort-head" title="Trier la liste"><select id="sortSel" aria-label="Tri">${sortOptions().map(([v, l]) => `<option value="${v}"${state.sort === v ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></label><span>Réalisation</span><span class="year-head">Année</span><span class="cells">${visibleRatings().map((r) => `<button class="cell${state.sort === r.key ? ' on' : ''}" data-sort="${r.key}" title="Trier par ${esc(r.title)}" aria-label="${esc(r.label)}">${LOGOS[r.key] || esc(r.short || r.label)}</button>`).join('')}</span>`
     : '';
   $('#listHead').onclick = (e) => {
     const b = e.target.closest('[data-sort]');
@@ -904,13 +948,16 @@ const areaRank = (a) => (a.startsWith('Paris ') ? parseInt(a.slice(6)) : 100);
 const byPlace = (a, b) =>
   areaRank(a.area) - areaRank(b.area) || String(a.dept).localeCompare(String(b.dept)) || a.area.localeCompare(b.area, 'fr') || a.name.localeCompare(b.name, 'fr');
 
+// Mise en valeur : bonnes notes en gras, notes faibles estompées
+const tier = (r, v) => (v >= r.hi ? ' hi' : v < r.lo ? ' lo' : '');
+
 function ratingCells(m) {
   return `<span class="cells">${visibleRatings().map((r) => {
     const v = m[r.key];
     if (v == null) return `<span class="cell na" title="${esc(r.title)}">–</span>`;
     // note presse : ouvre la fenêtre des critiques (extraits, notes, liens vers les articles)
-    if (r.key === 'press') return `<button class="cell press-cell${v >= r.hi ? ' hi' : ''}" data-press="${m.id}" title="Voir les critiques presse"><i>${esc(r.short || r.label)}</i>${esc(r.fmt(v))}</button>`;
-    return `<span class="cell${v >= r.hi ? ' hi' : ''}" title="${esc(r.title)}"><i>${esc(r.short || r.label)}</i>${esc(r.fmt(v))}</span>`;
+    if (r.key === 'press') return `<button class="cell press-cell${tier(r, v)}" data-press="${m.id}" title="Voir les critiques presse"><i>${esc(r.short || r.label)}</i>${esc(r.fmt(v))}</button>`;
+    return `<span class="cell${tier(r, v)}" title="${esc(r.title)}"><i>${esc(r.short || r.label)}</i>${esc(r.fmt(v))}</span>`;
   }).join('')}</span>`;
 }
 
