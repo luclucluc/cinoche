@@ -253,11 +253,12 @@ main { padding: 0 var(--pad) 0 var(--gutter); min-width: 0; }
 .list-head .cell:hover { color: var(--ink); }
 .list-head .cell.on { color: var(--ink); font-weight: 700; text-decoration: underline; text-underline-offset: 4px; }
 
-.item { border-bottom: 1px solid var(--hair); }
+.item { border-bottom: 1px solid var(--hair); content-visibility: auto; contain-intrinsic-size: auto 74px; } /* films hors écran ni mis en page ni peints : animations fluides */
 /* Chaque fiche va jusqu'aux bords (colonne de filtres → bord de la fenêtre), contenu inchangé */
 .list .item { margin: 0 calc(-1 * var(--pad)) 0 calc(-1 * var(--gutter)); padding: 0 var(--pad) 0 var(--gutter); }
 .item.open { background: var(--active); }
 .row { width: 100%; padding: 10px 8px; cursor: pointer; }
+.row { scroll-margin-top: calc(var(--header-h, 0px) + 34px); } /* ramené en vue sous l'en-tête et la barre des colonnes */
 /* Un film occupe la hauteur de 2 lignes de filtre (filets partagés : 2 × (h − 1), moins le filet du bas) */
 @media (min-width: 861px) {
   .row.film-row { height: calc(2 * (var(--filter-h) - 1px) - 1px); padding-top: 6px; padding-bottom: 6px; overflow: hidden; }
@@ -364,7 +365,11 @@ select { appearance: none; border: 1px solid var(--line); background: var(--surf
 #results.map-mode .row { padding: 12px 16px; }
 #results.map-mode .group-title { margin: 0; padding: 18px 16px 6px; }
 #results.map-mode .group-title:first-child { padding-top: 8px; } /* premier cinéma collé en haut */
-#results.map-mode .cine-item .row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+/* Cinéma : nom et adresse à gauche ; distance et nombre de films à droite */
+#results.map-mode .cine-item .row { grid-template-columns: minmax(0, 1fr) auto; }
+.cine-item .title .cine-addr { font: var(--fs-text) var(--sans); color: var(--muted); margin-top: 4px; }
+.cine-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; font-size: var(--fs-text); color: var(--muted); text-align: right; white-space: nowrap; }
+.cine-meta .dist { color: var(--ink); }
 #results.map-mode .row { grid-template-columns: var(--poster) minmax(0, 1fr) minmax(0, 1fr) auto; }
 #results.map-mode .row.film-row, #results.map-mode .list-head { grid-template-columns: var(--poster) minmax(0, 1fr) minmax(0, 1fr) 48px auto; }
 #results.map-mode .list-head { margin: 0; padding: 0 16px; }
@@ -372,6 +377,9 @@ select { appearance: none; border: 1px solid var(--line); background: var(--surf
 .map-box { position: sticky; top: calc(var(--header-h, 200px) + var(--bar-h, 0px)); height: calc(100vh - var(--header-h, 200px) - var(--bar-h, 0px)); min-height: 360px; border-right: 1px solid var(--line); }
 #map { height: 100%; background: var(--hair); }
 #results.map-mode .detail { padding: 4px 16px 22px; }
+/* Colonne étroite : film au-dessus, horaires en ligne sur toute la largeur (comme en mode liste) */
+#results.map-mode .place { grid-template-columns: 1fr; gap: 6px; }
+#results.map-mode .day-line { grid-template-columns: 80px 1fr; }
 #results.map-mode .film-head { grid-template-columns: 1fr; }
 #results.map-mode .film-side { border-left: 0; padding-left: 0; }
 
