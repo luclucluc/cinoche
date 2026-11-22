@@ -363,6 +363,25 @@ function closePop(animate = false) {
   } else pop.hidden = true;
 }
 
+// Fiche d'un film : glisse et fondu. La hauteur animée est plafonnée à celle de l'écran,
+// sinon une très longue fiche (semaine entière) défilerait trop vite pour être vue.
+const DETAIL_MS = 380;
+function slideDetail(el, open, done) {
+  el.getAnimations().forEach((a) => a.cancel());
+  if (reducedMotion()) return done?.();
+  const h = Math.min(el.scrollHeight, innerHeight);
+  const opts = { duration: DETAIL_MS, easing: 'cubic-bezier(.2, .7, .2, 1)' };
+  const frames = [{ height: '0px', opacity: 0, overflow: 'hidden' }, { height: h + 'px', opacity: 1, overflow: 'hidden' }];
+  if (!open) { frames.reverse(); opts.duration = DETAIL_MS * .7; }
+  const anim = el.animate(frames, opts);
+  // fin garantie même si l'événement d'animation n'arrive pas (onglet en arrière-plan…)
+  let ended = false;
+  const end = () => { if (ended) return; ended = true; clearTimeout(timer); done?.(); };
+  const timer = setTimeout(end, opts.duration + 60);
+  anim.onfinish = end;
+  anim.oncancel = () => { ended = true; clearTimeout(timer); };
+}
+
 // Dépliage / repliage en douceur des filtres de la colonne
 const SLIDE_MS = 250;
 const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -562,10 +581,15 @@ function bindControls() {
     if (!row) return;
     const li = row.parentElement;
     const key = li.dataset.key;
-    state.open.has(key) ? state.open.delete(key) : state.open.add(key);
-    li.classList.toggle('open');
-    if (li.classList.contains('open') && !li.querySelector('.detail').childElementCount) fillDetail(li);
-    if (state.view === 'map' && key.startsWith('t') && li.classList.contains('open')) cineMap?.focus(key.slice(1));
+    const detail = li.querySelector('.detail');
+    const opening = !li.classList.contains('open');
+    opening ? state.open.add(key) : state.open.delete(key);
+    if (opening) {
+      li.classList.add('open');
+      if (!detail.childElementCount) fillDetail(li);
+      slideDetail(detail, true);
+    } else slideDetail(detail, false, () => { if (!state.open.has(key)) li.classList.remove('open'); });
+    if (state.view === 'map' && key.startsWith('t') && opening) cineMap?.focus(key.slice(1));
   });
 
 

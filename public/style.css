@@ -17,7 +17,8 @@
   --accent: #ffffff;
   --on-accent: #111111;
   --pad: clamp(12px, 1.5vw, 20px);
-  --poster: 54px;
+  --poster: 46px;
+  --filter-h: 38px; /* hauteur d'une ligne de filtre ; un film = 2 lignes */
   --cell: 58px;
   /* Une seule famille : Helvetica, Arial, sans-serif */
   --mono: Helvetica, Arial, sans-serif;
@@ -114,11 +115,11 @@ a { color: inherit; }
 .filters .seg { display: flex; }
 /* Blocs accolés : chaque bloc chevauche d'1px le précédent pour ne garder qu'un trait */
 .filters > * + * { margin-top: -1px; }
-.filters .seg button { flex: 1; }
+.filters .seg button { flex: 1; height: var(--filter-h); }
 #view button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
 #view svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 #version button { font-size: var(--fs-small); padding-top: 4px; padding-bottom: 4px; } /* VO / VF : texte réduit */
-.print-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-top: -1px; }
+.print-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: var(--filter-h); margin-top: -1px; }
 .print-btn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: square; }
 .sidebar > * { flex-shrink: 0; }
 /* Seuls les filtres défilent : les boutons du bas restent toujours visibles */
@@ -128,7 +129,7 @@ a { color: inherit; }
 .side-actions { display: flex; margin-top: auto; }
 .side-actions .text-btn { flex: 1; height: 40px; border-left: 0; border-bottom: 0; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
 .side-actions .text-btn:last-child { border-right: 0; }
-.filters .chip { width: 100%; text-align: left; padding: 9px 26px 9px 10px; white-space: normal; }
+.filters .chip { width: 100%; min-height: var(--filter-h); text-align: left; padding: 8px 26px 8px 10px; white-space: normal; }
 .filters .chip + .chip, .filters .pop.inline + .chip { margin-top: -1px; }
 .chip-wrap { position: relative; }
 .filters > .chip-wrap:first-child .chip { border-top: 0; } /* « Sélection » : pas de double filet sous « Filtres » */
@@ -257,6 +258,11 @@ main { padding: 0 var(--pad) 0 var(--gutter); min-width: 0; }
 .list .item { margin: 0 calc(-1 * var(--pad)) 0 calc(-1 * var(--gutter)); padding: 0 var(--pad) 0 var(--gutter); }
 .item.open { background: var(--active); }
 .row { width: 100%; padding: 10px 8px; cursor: pointer; }
+/* Un film occupe la hauteur de 2 lignes de filtre (filets partagés : 2 × (h − 1), moins le filet du bas) */
+@media (min-width: 861px) {
+  .row.film-row { height: calc(2 * (var(--filter-h) - 1px) - 1px); padding-top: 6px; padding-bottom: 6px; overflow: hidden; }
+  .film-row .poster { height: 100%; width: auto; }
+}
 .row:hover { background: var(--hover); }
 /* Liste des films : le survol déborde jusqu'aux bords (marge gauche et marge droite de la zone de résultats) */
 #results:not(.map-mode) .row:hover { box-shadow: calc(-1 * var(--gutter)) 0 0 var(--hover), var(--pad) 0 0 var(--hover); }
