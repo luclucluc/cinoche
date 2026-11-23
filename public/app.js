@@ -676,9 +676,15 @@ function bindControls() {
 
   let t;
   // Croix d'effacement maison (même ⓧ et même retrait à droite que « Filtres »)
+  // Au toucher, le champ garde le focus : la recherche déployée ne se replie pas avant l'effacement
+  $('#qClear').addEventListener('pointerdown', (e) => e.preventDefault());
   $('#qClear').onclick = () => { $('#q').value = ''; $('#qClear').hidden = true; state.q = ''; render(); $('#q').focus(); };
-  // Mobile : la croix referme la recherche (au toucher, avant que le champ ne perde le focus)
-  $('#searchClose').addEventListener('pointerdown', (e) => { e.preventDefault(); $('#q').blur(); });
+  // Mobile : la croix referme la recherche et l'efface (au toucher, avant que le champ ne perde le focus)
+  $('#searchClose').addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    if ($('#q').value) { $('#q').value = ''; $('#qClear').hidden = true; state.q = ''; render(); } // fermer = abandonner la recherche
+    $('#q').blur();
+  });
   $('#q').addEventListener('input', (e) => {
     $('#qClear').hidden = !e.target.value;
     clearTimeout(t);
