@@ -1743,6 +1743,7 @@ const followLink = (share) => `${location.origin}${location.pathname}#follow=${s
 let friendsCache = new Map(); // lien → profil chargé (ou null si retiré)
 let invite = FOLLOW_SHARE ? { share: FOLLOW_SHARE } : null; // invitation reçue, en attente de réponse
 let friendsMsg = '';
+let friendsOk = ''; // message de réussite (invitation acceptée…)
 const friendOpen = new Set(); // fiches d'amis dépliées (gardées d'un rendu à l'autre)
 
 // Infos des films en favori (gardées même quand le film quitte l'affiche)
@@ -1788,22 +1789,32 @@ async function initFriends() {
   }, true);
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#friendsPanel').hidden) closeFriends(); });
   if (invite) openFriends();
-  if (store.get('profile', null) && hasAccount()) {
-    try {
-      const me = await friendsApi(`/profile/${sync.syncState().key}`);
-      if (!me) store.set('profile', null); // profil supprimé depuis un autre appareil
-      else if (me.followers?.length) {
-        const following = store.get('following', []);
-        for (const share of me.followers) {
-          if (following.some((f) => f.share === share)) continue;
-          const pub = await friendsApi(`/u/${share}`).catch(() => null);
-          if (pub) following.push({ share, name: pub.name });
-        }
-        store.set('following', following);
-      }
-      publishProfile().catch(() => {}); // remet le profil à jour (favoris, films vus)
-    } catch { /* hors ligne : on réessaiera au prochain chargement */ }
-  }
+  await checkFollowers();
+  publishProfile().catch(() => {}); // remet le profil à jour (favoris, films vus)
+  // En revenant sur le site (onglet, appli rouverte) : nouveaux abonnés éventuels
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkFollowers(); });
+}
+
+// Personnes qui ont accepté mon invitation depuis la dernière visite : je les suis en retour
+async function checkFollowers() {
+  if (!store.get('profile', null) || !hasAccount()) return;
+  try {
+    const me = await friendsApi(`/profile/${sync.syncState().key}`);
+    if (!me) return store.set('profile', null); // profil supprimé depuis un autre appareil
+    if (!me.followers?.length) return;
+    const following = store.get('following', []);
+    const added = [];
+    for (const share of me.followers) {
+      if (following.some((f) => f.share === share)) continue;
+      const pub = await friendsApi(`/u/${share}`).catch(() => null);
+      if (pub) { following.push({ share, name: pub.name }); friendsCache.set(share, pub); added.push(pub.name); }
+    }
+    if (!added.length) return;
+    store.set('following', following);
+    friendsMsg = '';
+    friendsOk = `${added.join(', ')} ${added.length > 1 ? 'ont' : 'a'} accepté votre invitation : vous ${added.length > 1 ? 'les' : 'le ou la'} suivez maintenant.`;
+    if (!$('#friendsPanel').hidden) renderFriends();
+  } catch { /* hors ligne : on réessaiera plus tard */ }
 }
 
 function openFriends() {
@@ -1811,7 +1822,7 @@ function openFriends() {
   renderFriends();
   showPanel($('#friendsPanel'), $('#friendsOverlay'));
   $('#friendsClose').focus({ preventScroll: true });
-  loadFriends();
+  checkFollowers().then(loadFriends);
 }
 function closeFriends() { hidePanel($('#friendsPanel'), $('#friendsOverlay')); }
 
@@ -1839,7 +1850,11 @@ function friendFilms(list, kind) {
 function renderFriends() {
   const prof = store.get('profile', null);
   const following = store.get('following', []);
+  const askName = (id) => `<label class="friend-name">Votre pseudo<input id="${id}" maxlength="40" placeholder="Ex. Camille" autocomplete="nickname" /></label>`;
   let html = '';
+  // Messages en tête du panneau : visibles sans faire défiler
+  if (friendsOk) html += `<p class="friends-note ok">${esc(friendsOk)}</p>`;
+  if (friendsMsg) html += `<p class="friends-note sync-error">${esc(friendsMsg)}</p>`;
 
   // Invitation reçue
   if (invite) {
@@ -1851,7 +1866,7 @@ function renderFriends() {
       html += `<section class="friend-invite">
         <p>${who} vous invite à suivre son profil : ses films favoris et ses films vus, avec ses notes.</p>
         <p class="hint">En acceptant, vous partagez aussi les vôtres avec ${pub ? esc(pub.name) : 'cette personne'}${hasAccount() ? '' : ' (un compte synchronisé est créé pour cela, sans e-mail ni mot de passe)'}.</p>
-        ${prof ? '' : `<label class="friend-name">Votre pseudo<input id="friendName" maxlength="40" placeholder="Ex. Camille" autocomplete="nickname" /></label>`}
+        ${prof ? '' : askName('friendName')}
         <div class="btns"><button class="btn primary" data-f="accept">Suivre et partager mon profil</button><button class="btn" data-f="dismiss">Refuser</button></div>
       </section>`;
     }
@@ -1859,13 +1874,15 @@ function renderFriends() {
 
   // Mon profil
   html += '<section><h3>Mon profil</h3>';
-  if (!hasAccount()) {
+  if (invite && !prof) {
+    html += '<p class="hint">Votre profil sera créé en acceptant l’invitation ci-dessus.</p>';
+  } else if (!hasAccount()) {
     html += `<p class="hint">Pour inviter des amis, il faut un compte synchronisé (sans e-mail ni mot de passe) : il garde votre profil en ligne.</p>
-      <label class="friend-name">Votre pseudo<input id="friendName" maxlength="40" placeholder="Ex. Camille" autocomplete="nickname" /></label>
+      ${askName('friendName')}
       <div class="btns"><button class="btn" data-f="create">Créer mon compte et mon lien d’invitation</button></div>`;
   } else if (!prof) {
     html += `<p class="hint">Choisissez un pseudo : vos amis le verront avec vos favoris et vos films vus.</p>
-      <label class="friend-name">Votre pseudo<input id="friendName" maxlength="40" placeholder="Ex. Camille" autocomplete="nickname" /></label>
+      ${askName('friendName')}
       <div class="btns"><button class="btn" data-f="create">Créer mon lien d’invitation</button></div>`;
   } else {
     html += `<p>Partagé sous le nom <b>${esc(prof.name)}</b>.</p>
@@ -1873,7 +1890,6 @@ function renderFriends() {
       ${prof.share ? `<input class="friend-link" readonly value="${esc(followLink(prof.share))}" />` : ''}
       <div class="btns"><button class="btn" data-f="send"${prof.share ? '' : ' disabled'}>Envoyer le lien</button><button class="btn" data-f="stop">Arrêter le partage</button></div>`;
   }
-  if (friendsMsg) html += `<p class="hint sync-error">${esc(friendsMsg)}</p>`;
   html += '</section>';
 
   // Personnes suivies
@@ -1898,7 +1914,7 @@ async function onFriendsClick(e) {
   const b = e.target.closest('[data-f]');
   if (!b) return;
   const act = b.dataset.f;
-  friendsMsg = '';
+  friendsMsg = friendsOk = '';
   const nameInput = $('#friendName');
   const name = nameInput?.value.trim();
   try {
@@ -1911,12 +1927,18 @@ async function onFriendsClick(e) {
       }
       b.disabled = true;
       const mine = await publishProfile();
+      if (!mine) throw new Error('profil non publié'); // jamais en silence : message d'erreur
       if (act === 'accept' && mine) {
         await friendsApi(`/u/${invite.share}/follow`, 'POST', { from: mine }); // l'ami nous suivra en retour
         const following = store.get('following', []);
-        if (!following.some((f) => f.share === invite.share)) following.push({ share: invite.share, name: invite.name || friendsCache.get(invite.share)?.name || 'Ami' });
+        const who = invite.name || friendsCache.get(invite.share)?.name || 'Ami';
+        if (!following.some((f) => f.share === invite.share)) following.push({ share: invite.share, name: who });
         store.set('following', following);
+        friendOpen.add(invite.share); // sa fiche s'affiche dépliée
+        friendsOk = `Vous suivez maintenant ${who}. ${who} vous verra aussi dans ses amis à sa prochaine visite.`;
         invite = null;
+      } else if (act === 'create' && mine) {
+        friendsOk = 'Votre lien d’invitation est prêt : envoyez-le à vos amis.';
       }
     } else if (act === 'send') {
       const link = followLink(store.get('profile', null).share);

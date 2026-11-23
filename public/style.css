@@ -868,3 +868,5 @@ sup { font-size: .7em; line-height: 0; vertical-align: super; }
 .seen-comment:focus { border-color: var(--line); background: var(--surface); }
 .seen-comment::placeholder { color: var(--muted); }
 .friend-comment { margin: 4px 0 0; font-size: var(--fs-text); line-height: 1.4; font-style: italic; }
+.friends-note { margin: 0; padding: 12px 20px; border-bottom: 1px solid var(--hair); font-size: var(--fs-text); }
+.friends-note.ok { background: var(--active); }
