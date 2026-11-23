@@ -1120,8 +1120,8 @@ function movieRow(key, m, shows = []) {
   const orig = m.originalTitle ? `<small>${esc(m.originalTitle)}</small>` : '';
   return `<li class="item${open}" data-key="${key}">
     <div class="row film-row" role="button" tabindex="0">
-      <span class="poster${!ap && isNew(m) ? ' is-new' : ''}" style="background-image:url('${POSTER(m.poster)}')"${!ap && isNew(m) ? ' title="Nouveauté"' : ''}></span>
-      <span class="title with-fav">${ap ? '<span class="ap" title="Avant-première"><span class="ap-long">Avant<br>première</span><span class="ap-short">Avant P.</span></span>' : ''}<span>${esc(m.title)}${orig}</span>${bookmark(m)}</span>
+      <span class="poster${!ap && isNew(m) ? ' is-new' : ''}" style="background-image:url('${POSTER(m.poster)}')"${!ap && isNew(m) ? ' title="Nouveauté"' : ''}>${ap ? '<span class="ap-badge">Avant P.</span>' : ''}</span>
+      <span class="title with-fav">${ap ? '<span class="ap" title="Avant-première">Avant<br>première</span>' : ''}<span>${esc(m.title)}${orig}</span>${bookmark(m)}</span>
       <span class="who"><span>${esc(m.directors.slice(0, 2).join(', ') || '—')}</span><span class="year">${esc(m.year || '')}</span></span>
       <span class="year-col">${esc(m.year || '')}</span>
       ${ratingCells(m)}
