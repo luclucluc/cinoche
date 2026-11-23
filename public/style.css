@@ -359,7 +359,7 @@ main { padding: 0 var(--pad) 0 var(--gutter); min-width: 0; }
   font: 400 var(--fs-small)/1 var(--mono); margin-right: -4px; text-align: center; /* « Avant » centré sur « première » */
 }
 .title.with-fav > .ap + span { margin-right: auto; }
-.ap-badge { display: none; } /* mobile : « Avant P. » en bas de l'affiche */
+.ap-badge { display: none; } /* mobile : « Avant 1re » en bas de l’affiche */
 .wk-short { display: none; } /* mobile : « Semaine » */
 /* Nouveauté : petit astérisque au coin haut gauche du titre */
 .poster.is-new { outline: 2px solid var(--ink); outline-offset: 0; } /* nouveauté : affiche encadrée */
