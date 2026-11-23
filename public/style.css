@@ -633,7 +633,7 @@ body.no-scroll { overflow: hidden; }
   .cell i[data-k="lb"] svg { height: 7px; }
   .cell.na { display: none; }
   .side { grid-column: 2; justify-content: flex-start; }
-  .detail { padding-left: 8px; }
+  .detail { padding-left: 0; padding-right: 0; } /* fiche aussi large que la ligne affiche + titre */
   .detail:has(> .info-toggle), #results.map-mode .detail:has(> .info-toggle) { padding-top: 0; } /* filet d'« Infos » à la même distance de l'affiche que celui d'une ligne fermée */
   /* synopsis sur toute la largeur, puis infos et liens côte à côte */
   .film-head, #results.map-mode .film-head { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 16px; }
