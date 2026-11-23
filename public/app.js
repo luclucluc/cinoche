@@ -1410,6 +1410,7 @@ function renderSeen() {
           <b>${esc(f.title)}</b>
           <small>${esc([f.directors.join(', '), f.year].filter(Boolean).join(' · '))}</small>
           <small>Vu le ${esc(date(f.at))}</small>
+          <textarea class="seen-comment" data-comment rows="1" maxlength="500" placeholder="Ajouter un commentaire…" aria-label="Mon commentaire">${esc(f.comment || '')}</textarea>
           <div class="seen-actions">
             <span class="stars" role="group" aria-label="Ma note">${[1, 2, 3, 4, 5].map((n) => `<button data-rate="${n}" class="${f.rating >= n ? 'on' : ''}" aria-label="${n} sur 5" title="${n}/5">${f.rating >= n ? '★' : '☆'}</button>`).join('')}</span>
             <button class="link" data-share>Partager</button>
@@ -1424,7 +1425,7 @@ async function shareSeen(id, btn) {
   const f = state.seen[id];
   const by = f.directors.length ? ` de ${f.directors.join(', ')}` : '';
   const stars = f.rating ? ` — ${'★'.repeat(f.rating)}${'☆'.repeat(5 - f.rating)}` : '';
-  const text = `J’ai vu ${f.title}${f.year ? ` (${f.year})` : ''}${by}${stars}`;
+  const text = `J’ai vu ${f.title}${f.year ? ` (${f.year})` : ''}${by}${stars}${f.comment ? `\n« ${f.comment} »` : ''}`;
   const url = FILM_URL(f.allocineId);
   try {
     if (navigator.share) return await navigator.share({ title: f.title, text, url });
@@ -1437,6 +1438,7 @@ async function shareSeen(id, btn) {
 function openSeen() {
   closePop();
   renderSeen();
+  requestAnimationFrame(() => $('#seenList').querySelectorAll('[data-comment]').forEach(growComment));
   showPanel($('#seenPanel'), $('#seenOverlay'));
   $('#seenClose').focus({ preventScroll: true });
 }
@@ -1445,7 +1447,19 @@ function closeSeen() {
   render(); // les coches de la liste suivent les retraits
 }
 
+// Commentaire d'un film vu : la zone de texte grandit avec le contenu ; enregistré pendant la frappe
+const growComment = (t) => { t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; };
+let commentTimer;
 function bindSeen() {
+  $('#seenList').addEventListener('input', (e) => {
+    const t = e.target.closest('[data-comment]');
+    if (!t) return;
+    growComment(t);
+    const id = t.closest('.seen-item').dataset.id;
+    state.seen[id].comment = t.value.trim() ? t.value.slice(0, 500) : undefined;
+    clearTimeout(commentTimer);
+    commentTimer = setTimeout(saveSeen, 600);
+  });
   $('#seenBtn').onclick = $('#topSeenBtn').onclick = openSeen;
   $('#seenClose').onclick = closeSeen;
   $('#seenOverlay').onclick = closeSeen;
@@ -1811,7 +1825,8 @@ function friendFilms(list, kind) {
       <span class="seen-poster" style="background-image:url('${POSTER(f.poster)}')"></span>
       <div><a href="${FILM_URL(f.allocineId || f.id)}" target="_blank" rel="noopener"><b>${esc(f.title)}</b></a>
       <small>${esc([(f.directors || []).join(', '), f.year].filter(Boolean).join(' · '))}</small>
-      ${kind === 'seen' && f.rating ? `<small class="friend-stars" title="${f.rating}/5">${starsText(f.rating)}</small>` : ''}</div>
+      ${kind === 'seen' && f.rating ? `<small class="friend-stars" title="${f.rating}/5">${starsText(f.rating)}</small>` : ''}
+      ${kind === 'seen' && f.comment ? `<p class="friend-comment">${esc(f.comment)}</p>` : ''}</div>
     </li>`).join('')}</ul>`;
 }
 

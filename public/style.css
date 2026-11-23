@@ -860,3 +860,9 @@ sup { font-size: .7em; line-height: 0; vertical-align: super; }
 .sync-refresh svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: square; }
 .sync-refresh.busy svg { animation: sync-spin .9s linear infinite; }
 @keyframes sync-spin { to { transform: rotate(360deg); } }
+
+/* Films vus : commentaire personnel (aussi visible par les amis) */
+.seen-comment { display: block; width: 100%; box-sizing: border-box; margin: 8px 0 2px; padding: 6px 8px; border: 1px solid var(--hair); background: transparent; color: var(--ink); font: var(--fs-text)/1.4 var(--sans); resize: none !important; overflow: hidden; outline: 0; }
+.seen-comment:focus { border-color: var(--line); background: var(--surface); }
+.seen-comment::placeholder { color: var(--muted); }
+.friend-comment { margin: 4px 0 0; font-size: var(--fs-text); line-height: 1.4; font-style: italic; }
