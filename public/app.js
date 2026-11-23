@@ -210,7 +210,7 @@ const dayLabel = (d, today = parisNow().date) => {
 
 function buildDays() {
   $('#days').innerHTML =
-    `<button role="tab" data-date="week">Toute la semaine</button>` +
+    `<button role="tab" data-date="week"><span class="wk-long">Toute la semaine</span><span class="wk-short">Semaine</span></button>` +
     // Toujours 7 jours à partir d'aujourd'hui ; un jour sans données (mise à jour de la nuit pas encore passée) est grisé
     Array.from({ length: 7 }, (_, i) => {
       const dt = new Date(parisNow().date + 'T12:00:00Z');

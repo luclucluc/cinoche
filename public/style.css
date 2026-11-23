@@ -360,6 +360,7 @@ main { padding: 0 var(--pad) 0 var(--gutter); min-width: 0; }
 }
 .title.with-fav > .ap + span { margin-right: auto; }
 .ap-short { display: none; } /* mobile : « Avant P. » */
+.wk-short { display: none; } /* mobile : « Semaine » */
 /* Nouveauté : petit astérisque au coin haut gauche du titre */
 .poster.is-new { outline: 2px solid var(--ink); outline-offset: 0; } /* nouveauté : affiche encadrée */
 .title small { display: block; font: var(--fs-small) var(--mono); color: var(--muted); margin-top: 0; line-height: 1.2; }
@@ -608,6 +609,8 @@ body.no-scroll { overflow: hidden; }
   .film-row .who .year { display: inline; margin-left: auto; padding-left: 10px; } /* année calée à droite */
   .poster { grid-row: span 3; }
   .ap-long { display: none; }
+  .wk-long { display: none; }
+  .wk-short { display: inline; }
   .ap-short { display: inline; }
   .film-row .title { margin-top: -4px; } /* haut des lettres du titre aligné sur le haut de l'affiche */
   .row.film-row { grid-template-rows: auto auto 1fr; } /* la dernière ligne prend la hauteur restante de l'affiche */
@@ -682,14 +685,17 @@ body.no-scroll { overflow: hidden; }
   }
   body.filters-open .sidebar { transform: none; visibility: visible; transition: transform .28s cubic-bezier(.2, .7, .2, 1), visibility 0s; }
   /* Fiche film : horaires d'abord, acteurs / synopsis / détails / liens derrière « Infos » */
-  .info-toggle { display: flex; align-items: center; gap: 6px; width: 100%; margin: 0; padding: 8px 0 8px calc(var(--poster) + 6px); box-sizing: border-box; border: 0; border-top: 1px solid var(--hair); background: none; color: var(--ink); font: var(--fs-text) var(--sans); text-align: left; } /* aligné sur le titre (affiche + écart − retrait de la fiche), écrit comme le réalisateur */
+  .info-toggle { display: flex; align-items: center; gap: 6px; width: 100%; margin: 0; padding: 8px 0; box-sizing: border-box; border: 0; border-top: 1px solid var(--hair); background: none; color: var(--ink); font: var(--fs-text) var(--sans); text-align: left; } /* calé tout à gauche, écrit comme le réalisateur */
   .info-open > .film-head { margin-bottom: 12px; }
   .info-toggle::after { content: '▾'; font-size: 10px; transition: transform .2s; }
   .info-open > .info-toggle::after { transform: rotate(180deg); }
   .info-toggle:hover { color: var(--muted); }
-  #results.map-mode .info-toggle { padding-left: calc(var(--poster) + 8px); } /* mode carte : fiche en retrait de 16px, ligne de 10px */
   .detail:not(.info-open) > .film-head { display: none; }
   .detail:not(.info-open) > .by-time { padding-top: 0; } /* même espace sous « Infos » qu'au-dessus */
+  /* Séances : sans marges latérales, l'heure calée à gauche comme « Infos » ; le 2e jour reste aligné sur le cinéma */
+  .show-row { padding-left: 0; padding-right: 0; }
+  .si-in { padding-left: 0; padding-right: 0; }
+  .day-tabs button { padding-left: 0; padding-right: 0; }
   /* Croix à gauche, à l'emplacement du burger qui ouvre le menu */
   .side-head { gap: 0; }
   .side-close { order: -1; display: inline-flex; align-items: center; justify-content: center; align-self: stretch; flex: none; width: 46px; padding: 0; text-decoration: none; border-right: 1px solid var(--line); }
