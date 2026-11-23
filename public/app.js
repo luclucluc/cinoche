@@ -12,6 +12,9 @@ import { LOGOS } from './logos.js';
 // réécrite par les filtres, puis retiré de la barre d'adresse
 const JOIN_KEY = location.hash.match(/(?:^#|&)sync=([A-Za-z0-9-]+)/)?.[1] || null;
 if (JOIN_KEY) history.replaceState(null, '', location.pathname + location.search);
+// Invitation d'un ami (#follow=LIEN) : même principe
+const FOLLOW_SHARE = location.hash.match(/(?:^#|&)follow=([A-Za-z0-9]+)/)?.[1]?.toUpperCase() || null;
+if (FOLLOW_SHARE) history.replaceState(null, '', location.pathname + location.search);
 
 const $ = (s) => document.querySelector(s);
 const POSTER = (p) => (p ? `https://fr.web.img3.acsta.net/c_160_213${p}` : '');
@@ -22,7 +25,11 @@ const fold = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toL
 
 const store = {
   get: (k, d) => { try { return JSON.parse(localStorage.getItem('pc.' + k)) ?? d; } catch { return d; } },
-  set: (k, v) => { localStorage.setItem('pc.' + k, JSON.stringify(v)); sync.notifyPrefsChanged(); }, // + envoi au compte si connecté
+  set: (k, v) => {
+    localStorage.setItem('pc.' + k, JSON.stringify(v));
+    sync.notifyPrefsChanged(); // + envoi au compte si connecté
+    if (k === 'favMovies' || k === 'seen') scheduleProfile(); // + profil partagé avec les amis, s'il existe
+  },
 };
 
 // ------------------------------------------------------------------ Notes
@@ -189,6 +196,7 @@ async function init() {
     joinKey: JOIN_KEY,
   });
   if (JOIN_KEY) { openPrefs(); setPrefsTab('donnees'); } // montre le résultat de la synchronisation
+  initFriends();
 }
 
 function parisNow() {
@@ -669,6 +677,8 @@ function bindControls() {
   let t;
   // Croix d'effacement maison (même ⓧ et même retrait à droite que « Filtres »)
   $('#qClear').onclick = () => { $('#q').value = ''; $('#qClear').hidden = true; state.q = ''; render(); $('#q').focus(); };
+  // Mobile : la croix referme la recherche (au toucher, avant que le champ ne perde le focus)
+  $('#searchClose').addEventListener('pointerdown', (e) => { e.preventDefault(); $('#q').blur(); });
   $('#q').addEventListener('input', (e) => {
     $('#qClear').hidden = !e.target.value;
     clearTimeout(t);
@@ -1087,7 +1097,10 @@ function offRows(films) {
     offTimer = setTimeout(() => fetchOff(q), 250);
     return '';
   }
-  const list = (offCache.get(q) || []).filter((m) => !P.movies[m.id]);
+  // On retire seulement les films déjà affichés au-dessus : un film du programme masqué par les filtres
+  // (ou dont les séances sont passées) apparaît ici, en gris
+  const shown = new Set(current.shows.map((s) => s[0]));
+  const list = (offCache.get(q) || []).filter((m) => !shown.has(m.id));
   if (!list.length) return '';
   return `<li class="group-title off-title">Pas à l’affiche</li>` + list.map((m) => {
     offMovies.set(m.id, m);
@@ -1169,7 +1182,8 @@ function fillDetail(li) {
   requestAnimationFrame(() => alignInfoCols(box)); // après affichage du détail
 
   if (it.off) {
-    box.innerHTML = `<div class="film-head"><div class="film-main"><p class="credits">Aucune séance prévue à Paris cette semaine.</p></div><aside class="film-side"></aside>` +
+    const why = P.movies[it.m.id] ? 'Aucune séance à venir ne correspond à vos filtres.' : 'Aucune séance prévue à Paris cette semaine.';
+    box.innerHTML = `<div class="film-head"><div class="film-main"><p class="credits">${why}</p></div><aside class="film-side"></aside>` +
       `<aside class="film-links"><ul class="credits links link-pills"><li><a href="${FILM_URL(it.m.id)}" target="_blank" rel="noopener">Allociné</a></li></ul></aside></div>`;
     return;
   }
@@ -1678,6 +1692,215 @@ function replaceLocalPrefs(prefs) {
   Object.keys(localStorage).filter((k) => k.startsWith('pc.')).forEach((k) => localStorage.removeItem(k));
   for (const [k, v] of Object.entries(prefs)) localStorage.setItem('pc.' + k, JSON.stringify(v));
   location.reload();
+}
+
+// ------------------------------------------------------------------ Amis : profils partagés sur invitation
+// Chacun peut publier un profil en lecture seule (pseudo, favoris, films vus et notes) sous un lien
+// aléatoire. Ouvrir le lien d'un ami (#follow=…) propose de le suivre ; en acceptant, on publie aussi
+// son propre profil et l'ami nous suit en retour (suivi réciproque). Nécessite un compte synchronisé.
+// pc.profile = { name, share } (mon profil) · pc.following = [{ share, name }] (personnes suivies)
+const friendsApi = async (path, method = 'GET', body) => {
+  const res = await fetch(`${SYNC.endpoint}${path}`, { method, headers: body ? { 'Content-Type': 'application/json' } : undefined, body: body ? JSON.stringify(body) : undefined });
+  if (res.status === 404) return null;
+  if (!res.ok && res.status !== 204) throw new Error(`HTTP ${res.status}`);
+  return res.status === 204 ? true : res.json();
+};
+const hasAccount = () => sync.syncMode() === 'account' && !!sync.syncState().key;
+const followLink = (share) => `${location.origin}${location.pathname}#follow=${share}`;
+let friendsCache = new Map(); // lien → profil chargé (ou null si retiré)
+let invite = FOLLOW_SHARE ? { share: FOLLOW_SHARE } : null; // invitation reçue, en attente de réponse
+let friendsMsg = '';
+const friendOpen = new Set(); // fiches d'amis dépliées (gardées d'un rendu à l'autre)
+
+// Infos des films en favori (gardées même quand le film quitte l'affiche)
+function favEntries() {
+  const info = store.get('favInfo', {});
+  let changed = false;
+  const out = [];
+  for (const id of state.favMovies) {
+    const m = P.movies[id] || offMovies.get(id) || state.seen[id];
+    if (m) {
+      const e = { id, title: m.title, year: m.year || null, directors: (m.directors || []).slice(0, 2), poster: m.poster || null };
+      if (JSON.stringify(info[id]) !== JSON.stringify(e)) { info[id] = e; changed = true; }
+    }
+    if (info[id]) out.push(info[id]);
+  }
+  if (changed) localStorage.setItem('pc.favInfo', JSON.stringify(info)); // sans relancer la publication
+  return out;
+}
+
+let profileTimer;
+function scheduleProfile() {
+  clearTimeout(profileTimer);
+  if (store.get('profile', null) && hasAccount()) profileTimer = setTimeout(() => publishProfile().catch(() => {}), 3000);
+}
+async function publishProfile() {
+  const prof = store.get('profile', null);
+  if (!prof || !hasAccount()) return null;
+  const { share } = await friendsApi(`/profile/${sync.syncState().key}`, 'PUT', { name: prof.name, favs: favEntries(), seen: state.seen });
+  if (share !== prof.share) store.set('profile', { ...prof, share });
+  return share;
+}
+
+// Au démarrage : nouveaux abonnés (suivi réciproque) et invitation reçue
+async function initFriends() {
+  if (!SYNC.endpoint) return;
+  $('#friendsBtn').onclick = $('#topFriendsBtn').onclick = openFriends;
+  $('#friendsClose').onclick = closeFriends;
+  $('#friendsOverlay').onclick = closeFriends;
+  $('#friendsBody').onclick = onFriendsClick;
+  $('#friendsBody').addEventListener('toggle', (e) => {
+    const d = e.target;
+    if (d.classList?.contains('friend')) d.open ? friendOpen.add(d.dataset.share) : friendOpen.delete(d.dataset.share);
+  }, true);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#friendsPanel').hidden) closeFriends(); });
+  if (invite) openFriends();
+  if (store.get('profile', null) && hasAccount()) {
+    try {
+      const me = await friendsApi(`/profile/${sync.syncState().key}`);
+      if (!me) store.set('profile', null); // profil supprimé depuis un autre appareil
+      else if (me.followers?.length) {
+        const following = store.get('following', []);
+        for (const share of me.followers) {
+          if (following.some((f) => f.share === share)) continue;
+          const pub = await friendsApi(`/u/${share}`).catch(() => null);
+          if (pub) following.push({ share, name: pub.name });
+        }
+        store.set('following', following);
+      }
+      publishProfile().catch(() => {}); // remet le profil à jour (favoris, films vus)
+    } catch { /* hors ligne : on réessaiera au prochain chargement */ }
+  }
+}
+
+function openFriends() {
+  closePop();
+  renderFriends();
+  showPanel($('#friendsPanel'), $('#friendsOverlay'));
+  $('#friendsClose').focus({ preventScroll: true });
+  loadFriends();
+}
+function closeFriends() { hidePanel($('#friendsPanel'), $('#friendsOverlay')); }
+
+async function loadFriends() {
+  const shares = [...store.get('following', []).map((f) => f.share), ...(invite ? [invite.share] : [])];
+  await Promise.all(shares.map(async (share) => {
+    try { friendsCache.set(share, await friendsApi(`/u/${share}`)); } catch { /* garde l'ancienne version */ }
+  }));
+  if (invite) invite.name = friendsCache.get(invite.share)?.name;
+  if (!$('#friendsPanel').hidden) renderFriends();
+}
+
+const starsText = (n) => (n ? '★'.repeat(n) + '☆'.repeat(5 - n) : '');
+function friendFilms(list, kind) {
+  if (!list.length) return `<p class="hint friend-empty">${kind === 'fav' ? 'Aucun favori.' : 'Aucun film vu.'}</p>`;
+  return `<ul class="friend-films">${list.map((f) => `<li>
+      <span class="seen-poster" style="background-image:url('${POSTER(f.poster)}')"></span>
+      <div><a href="${FILM_URL(f.allocineId || f.id)}" target="_blank" rel="noopener"><b>${esc(f.title)}</b></a>
+      <small>${esc([(f.directors || []).join(', '), f.year].filter(Boolean).join(' · '))}</small>
+      ${kind === 'seen' && f.rating ? `<small class="friend-stars" title="${f.rating}/5">${starsText(f.rating)}</small>` : ''}</div>
+    </li>`).join('')}</ul>`;
+}
+
+function renderFriends() {
+  const prof = store.get('profile', null);
+  const following = store.get('following', []);
+  let html = '';
+
+  // Invitation reçue
+  if (invite) {
+    const pub = friendsCache.get(invite.share);
+    if (friendsCache.has(invite.share) && !pub) html += `<section class="friend-invite"><p>Ce lien d’invitation n’est plus valable.</p><div class="btns"><button class="btn" data-f="dismiss">Fermer</button></div></section>`;
+    else if (following.some((f) => f.share === invite.share)) html += `<section class="friend-invite"><p>Vous suivez déjà <b>${esc(pub?.name || '')}</b>.</p><div class="btns"><button class="btn" data-f="dismiss">OK</button></div></section>`;
+    else {
+      const who = pub ? `<b>${esc(pub.name)}</b>` : 'Quelqu’un';
+      html += `<section class="friend-invite">
+        <p>${who} vous invite à suivre son profil : ses films favoris et ses films vus, avec ses notes.</p>
+        <p class="hint">En acceptant, vous partagez aussi les vôtres avec ${pub ? esc(pub.name) : 'cette personne'}${hasAccount() ? '' : ' (un compte synchronisé est créé pour cela, sans e-mail ni mot de passe)'}.</p>
+        ${prof ? '' : `<label class="friend-name">Votre pseudo<input id="friendName" maxlength="40" placeholder="Ex. Camille" autocomplete="nickname" /></label>`}
+        <div class="btns"><button class="btn primary" data-f="accept">Suivre et partager mon profil</button><button class="btn" data-f="dismiss">Refuser</button></div>
+      </section>`;
+    }
+  }
+
+  // Mon profil
+  html += '<section><h3>Mon profil</h3>';
+  if (!hasAccount()) {
+    html += `<p class="hint">Pour inviter des amis, il faut un compte synchronisé (sans e-mail ni mot de passe) : il garde votre profil en ligne.</p>
+      <label class="friend-name">Votre pseudo<input id="friendName" maxlength="40" placeholder="Ex. Camille" autocomplete="nickname" /></label>
+      <div class="btns"><button class="btn" data-f="create">Créer mon compte et mon lien d’invitation</button></div>`;
+  } else if (!prof) {
+    html += `<p class="hint">Choisissez un pseudo : vos amis le verront avec vos favoris et vos films vus.</p>
+      <label class="friend-name">Votre pseudo<input id="friendName" maxlength="40" placeholder="Ex. Camille" autocomplete="nickname" /></label>
+      <div class="btns"><button class="btn" data-f="create">Créer mon lien d’invitation</button></div>`;
+  } else {
+    html += `<p>Partagé sous le nom <b>${esc(prof.name)}</b>.</p>
+      <p class="hint">Envoyez ce lien aux personnes de votre choix : en l’ouvrant, elles pourront vous suivre et vous les suivrez en retour.</p>
+      ${prof.share ? `<input class="friend-link" readonly value="${esc(followLink(prof.share))}" />` : ''}
+      <div class="btns"><button class="btn" data-f="send"${prof.share ? '' : ' disabled'}>Envoyer le lien</button><button class="btn" data-f="stop">Arrêter le partage</button></div>`;
+  }
+  if (friendsMsg) html += `<p class="hint sync-error">${esc(friendsMsg)}</p>`;
+  html += '</section>';
+
+  // Personnes suivies
+  html += `<section><h3>Personnes suivies</h3>`;
+  if (!following.length) html += '<p class="hint">Personne pour l’instant. Quand un ami vous envoie son lien d’invitation, ouvrez-le pour le suivre.</p>';
+  html += following.map((f) => {
+    const pub = friendsCache.get(f.share);
+    const gone = friendsCache.has(f.share) && !pub;
+    const seen = pub ? Object.entries(pub.seen || {}).map(([id, s]) => ({ id, ...s })).sort((a, b) => String(b.at).localeCompare(String(a.at))) : [];
+    const favs = pub?.favs || [];
+    return `<details class="friend" data-share="${f.share}"${friendOpen.has(f.share) ? ' open' : ''}>
+      <summary><b>${esc(pub?.name || f.name)}</b><small>${gone ? 'a retiré son profil' : pub ? `${favs.length} favori${favs.length > 1 ? 's' : ''} · ${seen.length} vu${seen.length > 1 ? 's' : ''}` : 'chargement…'}</small></summary>
+      ${pub ? `<h4>Favoris</h4>${friendFilms(favs, 'fav')}<h4>Films vus</h4>${friendFilms(seen, 'seen')}` : ''}
+      <div class="btns"><button class="btn" data-f="unfollow">Ne plus suivre</button></div>
+    </details>`;
+  }).join('');
+  html += '</section><p class="prefs-foot"><a href="confidentialite.html">Données et confidentialité</a></p>';
+  $('#friendsBody').innerHTML = html;
+}
+
+async function onFriendsClick(e) {
+  const b = e.target.closest('[data-f]');
+  if (!b) return;
+  const act = b.dataset.f;
+  friendsMsg = '';
+  const nameInput = $('#friendName');
+  const name = nameInput?.value.trim();
+  try {
+    if (act === 'dismiss') { invite = null; }
+    else if (act === 'create' || act === 'accept') {
+      if (!store.get('profile', null)) {
+        if (!name) { friendsMsg = 'Choisissez un pseudo.'; nameInput?.focus(); return renderFriends(); }
+        if (!hasAccount()) await sync.createAccount();
+        store.set('profile', { name });
+      }
+      b.disabled = true;
+      const mine = await publishProfile();
+      if (act === 'accept' && mine) {
+        await friendsApi(`/u/${invite.share}/follow`, 'POST', { from: mine }); // l'ami nous suivra en retour
+        const following = store.get('following', []);
+        if (!following.some((f) => f.share === invite.share)) following.push({ share: invite.share, name: invite.name || friendsCache.get(invite.share)?.name || 'Ami' });
+        store.set('following', following);
+        invite = null;
+      }
+    } else if (act === 'send') {
+      const link = followLink(store.get('profile', null).share);
+      const text = 'Suis-moi sur Cinoche : mes films favoris et mes films vus.';
+      if (navigator.share) { try { await navigator.share({ title: 'Cinoche', text, url: link }); } catch { /* annulé */ } }
+      else { await navigator.clipboard.writeText(link); b.textContent = 'Lien copié ✓'; return setTimeout(renderFriends, 1500); }
+    } else if (act === 'stop') {
+      if (!confirm('Arrêter le partage ? Votre lien ne fonctionnera plus et vos amis ne verront plus vos films.')) return;
+      await friendsApi(`/profile/${sync.syncState().key}`, 'DELETE');
+      store.set('profile', null);
+    } else if (act === 'unfollow') {
+      const share = b.closest('.friend').dataset.share;
+      store.set('following', store.get('following', []).filter((f) => f.share !== share));
+    }
+  } catch {
+    friendsMsg = 'Action impossible pour le moment. Vérifiez votre connexion et réessayez.';
+  }
+  renderFriends();
 }
 
 // ------------------------------------------------------------------ Onglet App : raccourci sur l'écran d'accueil

@@ -19,15 +19,18 @@
   <body>
     <header class="top">
       <!-- Mobile : ouvre la colonne des filtres -->
-      <button class="burger" id="burgerBtn" type="button" aria-label="Filtres" aria-controls="sidebar" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h16M4 12h16M4 17.5h16" /></svg></button>
+      <button class="burger" id="burgerBtn" type="button" aria-label="Filtres" aria-controls="sidebar" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 8.5h9.5M17.6 8.5h2.9M3.5 15.5h2.9M11 15.5h9.5" /><circle cx="15.3" cy="8.5" r="2.3" /><circle cx="8.7" cy="15.5" r="2.3" /></svg></button>
       <label class="search">
         <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
         <input id="q" type="search" placeholder="Rechercher…" title="Film, réalisateur, acteur, cinéma" autocomplete="off" />
         <button class="x-circle" id="qClear" type="button" title="Effacer la recherche" aria-label="Effacer la recherche" hidden><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8" /><path d="M5.4 5.4l5.2 5.2M10.6 5.4l-5.2 5.2" /></svg></button>
       </label>
+      <!-- Mobile : referme la recherche déployée sur toute la ligne -->
+      <button class="search-close" id="searchClose" type="button" aria-label="Fermer la recherche" title="Fermer la recherche">✕</button>
       <!-- Mobile : Favoris, Films vus et Compte, à droite de la recherche -->
       <button class="burger top-account top-fav" id="topFavBtn" type="button" aria-label="Favoris" aria-pressed="false"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3.5h11v17l-5.5-4.2-5.5 4.2z" /></svg></button>
       <button class="burger top-account" id="topSeenBtn" type="button" aria-label="Films vus" aria-haspopup="dialog"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5" /></svg></button>
+      <button class="burger top-account" id="topFriendsBtn" type="button" aria-label="Amis" title="Amis" aria-haspopup="dialog"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20c.9-3.6 3.4-5.5 6.5-5.5s5.6 1.9 6.5 5.5" /><circle cx="17" cy="9" r="2.8" /><path d="M16.5 14.6c2.6.3 4.3 2.1 5 5" /></svg></button>
       <button class="burger top-account" id="topPrefsBtn" type="button" aria-label="Compte" title="Compte : apparence, notes, masquages, export" aria-haspopup="dialog"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4" /><path d="M4.5 20.5c1.2-3.8 4.1-5.8 7.5-5.8s6.3 2 7.5 5.8" /></svg></button>
       <div class="days" id="days" role="tablist" aria-label="Jour"></div>
     </header>
@@ -63,6 +66,7 @@
         <div class="side-actions">
           <button id="favBtn" class="text-btn seen-btn fav-btn" aria-pressed="false" aria-label="Favoris"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3.5h11v17l-5.5-4.2-5.5 4.2z" /></svg><span id="favCount"></span></button>
           <button id="seenBtn" class="text-btn seen-btn" aria-haspopup="dialog" aria-label="Films vus"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5" /></svg><span id="seenCount"></span></button>
+          <button id="friendsBtn" class="text-btn seen-btn" aria-haspopup="dialog" aria-label="Amis" title="Amis"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20c.9-3.6 3.4-5.5 6.5-5.5s5.6 1.9 6.5 5.5" /><circle cx="17" cy="9" r="2.8" /><path d="M16.5 14.6c2.6.3 4.3 2.1 5 5" /></svg></button>
           <button id="prefsBtn" class="text-btn seen-btn" title="Compte : apparence, notes, masquages, export" aria-haspopup="dialog"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4" /><path d="M4.5 20.5c1.2-3.8 4.1-5.8 7.5-5.8s6.3 2 7.5 5.8" /></svg>Compte</button>
         </div>
       </aside>
@@ -96,6 +100,16 @@
         <button class="icon-btn" id="seenClose" aria-label="Fermer">✕</button>
       </div>
       <ol class="seen-list" id="seenList"></ol>
+    </aside>
+
+    <!-- Amis : profils partagés sur invitation (favoris et films vus) -->
+    <div class="prefs-overlay" id="friendsOverlay" hidden></div>
+    <aside class="prefs friends-panel" id="friendsPanel" role="dialog" aria-modal="true" aria-labelledby="friendsTitle" hidden>
+      <div class="prefs-head">
+        <b id="friendsTitle">Amis</b>
+        <button class="icon-btn" id="friendsClose" aria-label="Fermer">✕</button>
+      </div>
+      <div id="friendsBody"></div>
     </aside>
 
     <!-- Critiques presse (fenêtre ouverte depuis la note presse) -->
