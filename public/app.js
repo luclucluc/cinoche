@@ -352,12 +352,38 @@ function openPop(key, chip, animate = true) {
   if (inline && animate) slide(pop, 'open');
   pop.querySelector('.pop-search')?.focus({ preventScroll: true });
 }
+// Curseur des heures : les deux poignées ne se croisent pas (écart minimal de 30 min)
+let hoursTimer;
+function onHoursInput(root, target) {
+  const [ia, ib] = root.querySelectorAll('.pop-hours-range');
+  let a = Number(ia.value), b = Number(ib.value);
+  if (b - a < H_STEP) {
+    if (target === ia) a = b - H_STEP; else b = a + H_STEP;
+    if (a < H_MIN) { a = H_MIN; b = H_MIN + H_STEP; }
+    if (b > H_MAX) { b = H_MAX; a = H_MAX - H_STEP; }
+    ia.value = a; ib.value = b;
+  }
+  state.hours = hoursValue(a, b);
+  const pct = (h) => ((h - H_MIN) / (H_MAX - H_MIN)) * 100;
+  const box = root.querySelector('.dual-range');
+  box.style.setProperty('--a', pct(a) + '%'); box.style.setProperty('--b', pct(b) + '%');
+  const val = root.querySelector('.pop-hours-val');
+  val.textContent = hoursLabel();
+  val.hidden = state.hours === '0';
+  clearTimeout(hoursTimer);
+  hoursTimer = setTimeout(render, 60);
+}
+// Filtre Heures toujours déplié dans la colonne (pas d'onglet) ; redessiné sauf pendant un glissement
+function renderHoursFilter() {
+  const box = $('#hoursFilter');
+  if (box && !box.contains(document.activeElement)) box.innerHTML = hoursBlock();
+}
 // Curseur à deux poignées du filtre Heures (deux curseurs superposés)
 function hoursBlock() {
   const [a, b] = hoursRange();
   const pct = (h) => ((h - H_MIN) / (H_MAX - H_MIN)) * 100;
   return `<div class="pop-hours">
-    <output class="pop-hours-val">${esc(hoursLabel())}</output>
+    <output class="pop-hours-val"${state.hours === '0' ? ' hidden' : ''}>${esc(hoursLabel())}</output>
     <div class="dual-range" style="--a:${pct(a)}%;--b:${pct(b)}%">
       <input type="range" class="pop-hours-range" data-end="a" min="${H_MIN}" max="${H_MAX}" step="${H_STEP}" value="${a}" aria-label="Début" />
       <input type="range" class="pop-hours-range" data-end="b" min="${H_MIN}" max="${H_MAX}" step="${H_STEP}" value="${b}" aria-label="Fin" />
@@ -595,26 +621,12 @@ function bindControls() {
     openPop(key, chip);
   });
   let addrTimer, rangeTimer;
+  $('#hoursFilter').addEventListener('input', (e) => {
+    if (e.target.classList.contains('pop-hours-range')) onHoursInput(e.currentTarget, e.target);
+  });
   pop.addEventListener('input', (e) => {
     // Curseur des heures : les deux poignées ne se croisent pas (écart minimal de 30 min)
-    if (e.target.classList.contains('pop-hours-range')) {
-      const [ia, ib] = pop.querySelectorAll('.pop-hours-range');
-      let a = Number(ia.value), b = Number(ib.value);
-      if (b - a < H_STEP) {
-        if (e.target === ia) a = b - H_STEP; else b = a + H_STEP;
-        if (a < H_MIN) { a = H_MIN; b = H_MIN + H_STEP; }
-        if (b > H_MAX) { b = H_MAX; a = H_MAX - H_STEP; }
-        ia.value = a; ib.value = b;
-      }
-      state.hours = hoursValue(a, b);
-      const pct = (h) => ((h - H_MIN) / (H_MAX - H_MIN)) * 100;
-      const box = pop.querySelector('.dual-range');
-      box.style.setProperty('--a', pct(a) + '%'); box.style.setProperty('--b', pct(b) + '%');
-      pop.querySelector('.pop-hours-val').textContent = hoursLabel();
-      clearTimeout(rangeTimer);
-      rangeTimer = setTimeout(render, 60);
-      return;
-    }
+    if (e.target.classList.contains('pop-hours-range')) return onHoursInput(pop, e.target);
     // Curseur de distance : mise à jour en direct de la valeur, de la liste et de la carte
     if (e.target.classList.contains('pop-radius-range')) {
       state.radius = sliderToRadius(Number(e.target.value));
@@ -867,6 +879,7 @@ const CONTROLS = [
 function controlEl(key) {
   if (key === 'version') return $('#version');
   if (key === 'pdf') return $('#printBtn');
+  if (key === 'hours') return $('#hoursFilter');
   if (key === 'view') return $('#view');
   const chip = document.querySelector(`.sidebar .chip[data-f="${key}"]`);
   return chip?.closest('.chip-wrap') || chip;
@@ -895,6 +908,7 @@ function render() {
   }
   renderedView = state.view;
   applyControls();
+  renderHoursFilter();
   // états visuels des contrôles
   for (const b of $('#view').children) b.classList.toggle('on', b.dataset.view === state.view);
   for (const b of $('#version').children) b.classList.toggle('on', b.dataset.v === state.version);

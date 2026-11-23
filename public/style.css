@@ -247,6 +247,10 @@ body { padding-top: var(--header-h, 0px); }
 .pop-range input:disabled { opacity: .4; cursor: not-allowed; }
 .pop-radius-val { min-width: 56px; text-align: right; font-size: var(--fs-text); font-weight: 600; font-variant-numeric: tabular-nums; }
 .pop-hours { padding: 12px var(--pad) 14px; }
+/* Filtre Heures : curseur toujours visible dans la colonne, sans onglet ni titre */
+.hours-filter { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.hours-filter .pop-hours { padding: 10px var(--pad) 8px; }
+.hours-filter .pop-hours-val { margin-bottom: 4px; font-size: var(--fs-small); }
 .sidebar > .filters > .pop.inline:has(.pop-hours) { min-height: 0; } /* pas de vide sous le curseur */
 .pop-hours-val { display: block; font-size: var(--fs-text); margin-bottom: 8px; }
 /* deux curseurs superposés : seules les poignées captent la souris ; la plage choisie est soulignée */
@@ -596,9 +600,15 @@ body.no-scroll { overflow: hidden; }
   .year-col { display: none; }
   .film-row .who .year { display: inline; margin-left: auto; padding-left: 10px; } /* année calée à droite */
   .poster { grid-row: span 3; }
+  .row.film-row { grid-template-rows: auto auto 1fr; } /* la dernière ligne prend la hauteur restante de l'affiche */
+  .film-row .cells { align-self: end; line-height: 1; } /* notes calées en bas de l'affiche */
   :root { --fs-title: 17px; }
+  .title { line-height: 1.08; } /* titres sur deux lignes plus serrés */
   .who { flex-direction: row; gap: 10px; align-items: baseline; font-size: var(--fs-text); }
-  .cells { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; margin-top: 4px; }
+  /* Notes sur une seule ligne : elles débordent jusqu'au bord de l'écran et glissent horizontalement */
+  .cells { display: flex; flex-wrap: nowrap; align-items: center; gap: 4px 14px; margin-top: 4px; margin-right: calc(-1 * var(--pad)); padding-right: var(--pad); overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .cells::-webkit-scrollbar { display: none; }
+  .cell { flex: none; white-space: nowrap; }
   /* Notes sans cadre ni fond : logo gris (comme l'en-tête des colonnes sur ordinateur) puis la note */
   .cell { display: inline-flex; align-items: center; gap: 5px; font-size: var(--fs-text); border: 0; padding: 0; background: none; color: inherit; }
   .cell i { display: inline-flex; align-items: center; font-style: normal; font-size: var(--fs-small); color: var(--muted); }
@@ -610,6 +620,7 @@ body.no-scroll { overflow: hidden; }
   .cell.na { display: none; }
   .side { grid-column: 2; justify-content: flex-start; }
   .detail { padding-left: 8px; }
+  .detail:has(> .info-toggle), #results.map-mode .detail:has(> .info-toggle) { padding-top: 0; } /* filet d'« Infos » à la même distance de l'affiche que celui d'une ligne fermée */
   /* synopsis sur toute la largeur, puis infos et liens côte à côte */
   .film-head, #results.map-mode .film-head { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 16px; }
   .film-main { grid-column: 1 / -1; }
@@ -627,11 +638,13 @@ body.no-scroll { overflow: hidden; }
   .prefs-head { height: var(--subhead-h); padding-left: var(--pad); } /* hauteur de la barre de recherche */
   .prefs-head .icon-btn { width: 46px; }
   /* En-tête mobile : le burger des filtres et la recherche sur une même ligne, puis les jours */
-  .top { flex-wrap: wrap; }
+  .top { flex-wrap: wrap; border-top: 1px solid var(--line); }
   .days { order: 3; flex-basis: 100%; }
   .days button { border-top: 0; } /* le filet du dessus est celui de la recherche */
   .burger { order: 1; display: flex; align-items: center; justify-content: center; flex: none; width: 46px; height: var(--subhead-h); padding: 0; border: 0; border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
   .burger:hover, body.filters-open .burger { background: var(--hover); }
+  #burgerBtn svg { width: 22px; height: 22px; } /* picto du menu un peu plus grand */
+  .search input { width: 0; } /* la recherche prend la place restante, sans pousser les boutons à la ligne */
   .top-account { order: 2; border-right: 0; border-left: 1px solid var(--line); }
   body.filters-open .top-account { background: var(--bg); }
   .top-account:hover { background: var(--hover); }
@@ -639,10 +652,12 @@ body.no-scroll { overflow: hidden; }
   .top-fav.on { background: var(--active); }
   .top-fav.on svg { fill: currentColor; }
   .side-actions { display: none !important; } /* Favoris, Films vus et Compte : dans la barre du haut sur mobile */
-  .search { order: 2; flex: 1; width: auto; height: var(--subhead-h); padding-left: 12px; border-right: 0; border-top: 0; }
+  .search { order: 2; flex: 1 1 0; min-width: 0; width: auto; height: var(--subhead-h); padding-left: 12px; border-right: 0; border-top: 0; }
   .results-bar { display: none; } /* le bouton Filtres est remplacé par le burger */
   .layout { display: block; }
-  main { padding-left: var(--pad); }
+  main { --pad: 10px; padding-left: var(--pad); } /* marges latérales de la liste plus étroites */
+  .row { padding-left: 0; padding-right: 0; }
+  #results.map-mode .row { padding-left: 10px; padding-right: 10px; }
   .list-head { margin-left: calc(-1 * var(--pad)); }
   .list .item { margin-left: calc(-1 * var(--pad)); padding-left: var(--pad); }
   /* Filtres : panneau pleine largeur qui glisse depuis la gauche */
@@ -654,11 +669,12 @@ body.no-scroll { overflow: hidden; }
   }
   body.filters-open .sidebar { transform: none; visibility: visible; transition: transform .28s cubic-bezier(.2, .7, .2, 1), visibility 0s; }
   /* Fiche film : horaires d'abord, acteurs / synopsis / détails / liens derrière « Infos » */
-  .info-toggle { display: flex; align-items: center; gap: 6px; width: 100%; margin: 0; padding: 8px 0; border: 0; border-top: 1px solid var(--hair); background: none; color: var(--muted); font: var(--fs-small) var(--sans); text-align: left; }
+  .info-toggle { display: flex; align-items: center; gap: 6px; width: 100%; margin: 0; padding: 8px 0 8px calc(var(--poster) + 6px); box-sizing: border-box; border: 0; border-top: 1px solid var(--hair); background: none; color: var(--ink); font: var(--fs-text) var(--sans); text-align: left; } /* aligné sur le titre (affiche + écart − retrait de la fiche), écrit comme le réalisateur */
   .info-open > .film-head { margin-bottom: 12px; }
   .info-toggle::after { content: '▾'; font-size: 10px; transition: transform .2s; }
   .info-open > .info-toggle::after { transform: rotate(180deg); }
-  .info-toggle:hover { color: var(--ink); }
+  .info-toggle:hover { color: var(--muted); }
+  #results.map-mode .info-toggle { padding-left: calc(var(--poster) + 8px); } /* mode carte : fiche en retrait de 16px, ligne de 10px */
   .detail:not(.info-open) > .film-head { display: none; }
   .detail:not(.info-open) > .by-time { padding-top: 0; } /* même espace sous « Infos » qu'au-dessus */
   /* Croix à gauche, à l'emplacement du burger qui ouvre le menu */
