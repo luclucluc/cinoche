@@ -129,6 +129,7 @@ async function init() {
   stripHover();
   addEventListener('load', stripHover); // feuilles chargées plus tard (carte)
   applyTheme(store.get('theme', null));
+  applyTextSize(store.get('textSize', 'm'));
   // hauteurs exactes (au dixième de pixel, pas arrondies) : la colonne et les en-têtes s'accrochent pile sous l'en-tête
   const exactH = (e) => (e.borderBoxSize?.[0]?.blockSize ?? e.target.getBoundingClientRect().height) + 'px';
   new ResizeObserver(([e]) => document.documentElement.style.setProperty('--header-h', exactH(e))).observe($('.top'));
@@ -762,6 +763,9 @@ function bindControls() {
   $('#printBtn').onclick = printProgramme;
   window.addEventListener('hashchange', () => { readHash(); render(); });
 }
+
+// Taille du texte : s, m (par défaut), l, xl — voir --fs-k dans style.css
+function applyTextSize(v) { document.documentElement.dataset.text = v || 'm'; }
 
 // Thème : 'light' (par défaut), 'dark' ou 'system' (suit le réglage de l'appareil)
 function applyTheme(pref) {
@@ -1627,6 +1631,7 @@ function people() {
 function renderPrefs() {
   const pref = store.get('theme', null) || 'light';
   for (const b of $('#themeSeg').children) b.classList.toggle('on', b.dataset.theme === pref);
+  for (const b of $('#textSeg').children) b.classList.toggle('on', b.dataset.text === store.get('textSize', 'm'));
   for (const b of $('#orderSeg').children) b.classList.toggle('on', b.dataset.order === state.showOrder);
 
   const names = [...state.hiddenPeople].sort((a, b) => a.localeCompare(b, 'fr'));
@@ -1819,6 +1824,14 @@ function bindPrefs() {
     applyTheme(b.dataset.theme);
     renderPrefs();
     if (state.view === 'map') render();
+  };
+  $('#textSeg').onclick = (e) => {
+    const b = e.target.closest('[data-text]');
+    if (!b) return;
+    store.set('textSize', b.dataset.text);
+    applyTextSize(b.dataset.text);
+    renderPrefs();
+    for (const li of $('#list').querySelectorAll('.item.open')) fillDetail(li); // colonnes des infos recalculées
   };
   $('#orderSeg').onclick = (e) => {
     const b = e.target.closest('[data-order]');

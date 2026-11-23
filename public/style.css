@@ -25,6 +25,10 @@
   --sans: Helvetica, Arial, sans-serif;
   color-scheme: light;
 }
+:root { --fs-k: 1; }
+:root[data-text='s'] { --fs-k: .9; }
+:root[data-text='l'] { --fs-k: 1.12; }
+:root[data-text='xl'] { --fs-k: 1.25; }
 :root[data-theme='dark'] {
   /* Sombre : fond quasi noir, texte et filets en gris (pas de blanc) ; survol et actifs un peu plus clairs */
   --bg: #0a0a0a;
@@ -61,7 +65,8 @@ a { color: inherit; }
 body { padding-top: var(--header-h, 0px); }
 :root {
   /* Trois tailles de texte seulement */
-  --fs-title: 20px; --fs-text: 13px; --fs-small: 11px;
+  /* Taille du texte réglable (Compte → Affichage) : --fs-k multiplie les trois tailles */
+  --fs-title: calc(20px * var(--fs-k)); --fs-text: calc(13px * var(--fs-k)); --fs-small: calc(11px * var(--fs-k));
 }
 :root { --side: 20%; --gutter: 16px; } /* grille de 10 colonnes : la colonne de filtres en occupe 2 */
 .search {
@@ -596,7 +601,7 @@ body.no-scroll { overflow: hidden; }
 /* ---------- Écrans moyens ---------- */
 @media (max-width: 1180px) {
   :root { --cell: 50px; }
-  :root { --fs-title: 18px; }
+  :root { --fs-title: calc(18px * var(--fs-k)); }
 }
 
 /* ---------- Mobile ---------- */
@@ -616,7 +621,7 @@ body.no-scroll { overflow: hidden; }
   .film-row .title { margin-top: -4px; } /* haut des lettres du titre aligné sur le haut de l'affiche */
   .row.film-row { grid-template-rows: auto auto 1fr; } /* la dernière ligne prend la hauteur restante de l'affiche */
   .film-row .cells { align-self: end; line-height: 1; } /* notes calées en bas de l'affiche */
-  :root { --fs-title: 17px; }
+  :root { --fs-title: calc(17px * var(--fs-k)); }
   .title { line-height: 1.08; } /* titres sur deux lignes plus serrés */
   .who { flex-direction: row; gap: 10px; align-items: baseline; font-size: var(--fs-text); }
   /* Notes sur une seule ligne : elles débordent jusqu'au bord de l'écran et glissent horizontalement */
@@ -648,6 +653,8 @@ body.no-scroll { overflow: hidden; }
   .pop:not(.inline) { left: 12px !important; right: 12px; width: auto; }
   .tabs { order: 3; width: 100%; height: 38px; border-top: 1px solid var(--hair); margin: 0 calc(-1 * var(--pad)); padding: 0 var(--pad); width: calc(100% + 2 * var(--pad)); }
   .days button { flex: 0 0 auto; min-width: max-content; }
+  /* iPhone : un champ dont le texte fait moins de 16 px déclenche un zoom automatique au toucher */
+  input:not([type='range']):not([type='checkbox']):not([type='radio']), select, textarea { font-size: 16px !important; }
   /* Pas de contour de sélection ni de surbrillance au toucher */
   * { -webkit-tap-highlight-color: transparent; }
   *:focus, *:focus-visible { outline: none !important; }
