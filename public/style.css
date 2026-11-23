@@ -250,9 +250,7 @@ body { padding-top: var(--header-h, 0px); }
 /* Filtre Heures : curseur toujours visible dans la colonne, sans onglet ni titre */
 .hours-filter { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 .hours-filter .pop-hours { padding: 10px var(--pad) 8px; }
-.hours-filter .pop-hours-val { margin-bottom: 4px; font-size: var(--fs-small); }
 .sidebar > .filters > .pop.inline:has(.pop-hours) { min-height: 0; } /* pas de vide sous le curseur */
-.pop-hours-val { display: block; font-size: var(--fs-text); margin-bottom: 8px; }
 /* deux curseurs superposés : seules les poignées captent la souris ; la plage choisie est soulignée */
 .dual-range { position: relative; height: 18px; }
 .dual-range::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: var(--faint); }
@@ -355,8 +353,9 @@ main { padding: 0 var(--pad) 0 var(--gutter); min-width: 0; }
   font: 400 var(--fs-small)/1 var(--mono); margin-right: -4px; text-align: center; /* « Avant » centré sur « première » */
 }
 .title.with-fav > .ap + span { margin-right: auto; }
+.ap-short { display: none; } /* mobile : « Avant P. » */
 /* Nouveauté : petit astérisque au coin haut gauche du titre */
-.poster.is-new { outline: 1px solid var(--ink); outline-offset: 0; } /* nouveauté : affiche encadrée */
+.poster.is-new { outline: 2px solid var(--ink); outline-offset: 0; } /* nouveauté : affiche encadrée */
 .title small { display: block; font: var(--fs-small) var(--mono); color: var(--muted); margin-top: 0; line-height: 1.2; }
 .who { display: flex; flex-direction: column; gap: 3px; font-size: var(--fs-text); }
 .who .year { color: var(--muted); font-variant-numeric: tabular-nums; }
@@ -373,8 +372,10 @@ main { padding: 0 var(--pad) 0 var(--gutter); min-width: 0; }
 .side { display: flex; justify-content: flex-end; }
 .fav { border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: 15px; line-height: 1; padding: 5px 8px; }
 .fav.on { background: var(--active); color: var(--ink); }
-.title.with-fav { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.mfav { flex: none; display: inline-grid; place-items: center; margin-left: 0; padding: 2px; border: 0; background: none; color: var(--ink); cursor: pointer; }
+.title.with-fav { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.title.with-fav > .ap { align-self: center; }
+/* Signet centré sur la première ligne du titre (hauteur d'une ligne), même si le titre en fait deux */
+.mfav { flex: none; display: inline-grid; place-items: center; height: calc(var(--fs-title) * 1.2); box-sizing: border-box; margin-left: 0; padding: 0 2px; border: 0; background: none; color: var(--ink); cursor: pointer; }
 .mfav svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: miter; }
 .mfav:not(.on):not(.seen) { opacity: .45; }
 .mfav:hover { opacity: 1; }
@@ -600,6 +601,9 @@ body.no-scroll { overflow: hidden; }
   .year-col { display: none; }
   .film-row .who .year { display: inline; margin-left: auto; padding-left: 10px; } /* année calée à droite */
   .poster { grid-row: span 3; }
+  .ap-long { display: none; }
+  .ap-short { display: inline; }
+  .film-row .title { margin-top: -4px; } /* haut des lettres du titre aligné sur le haut de l'affiche */
   .row.film-row { grid-template-rows: auto auto 1fr; } /* la dernière ligne prend la hauteur restante de l'affiche */
   .film-row .cells { align-self: end; line-height: 1; } /* notes calées en bas de l'affiche */
   :root { --fs-title: 17px; }
@@ -634,7 +638,7 @@ body.no-scroll { overflow: hidden; }
   .pop:not(.inline) { left: 12px !important; right: 12px; width: auto; }
   .tabs { order: 3; width: 100%; height: 38px; border-top: 1px solid var(--hair); margin: 0 calc(-1 * var(--pad)); padding: 0 var(--pad); width: calc(100% + 2 * var(--pad)); }
   .days button { flex: 0 0 auto; min-width: max-content; }
-  .prefs { width: 100%; min-width: 0; box-sizing: border-box; } /* Compte, Films vus : pleine largeur */
+  .prefs { width: 100%; min-width: 0; box-sizing: border-box; border-top: 1px solid var(--line); } /* Compte, Films vus : pleine largeur */
   .prefs-head { height: var(--subhead-h); padding-left: var(--pad); } /* hauteur de la barre de recherche */
   .prefs-head .icon-btn { width: 46px; }
   /* En-tête mobile : le burger des filtres et la recherche sur une même ligne, puis les jours */
@@ -663,7 +667,7 @@ body.no-scroll { overflow: hidden; }
   /* Filtres : panneau pleine largeur qui glisse depuis la gauche */
   .sidebar {
     display: flex; flex-direction: column; position: fixed; z-index: 55; top: 0; left: 0; bottom: 0; width: 100%; box-sizing: border-box; height: auto; max-height: none; overflow-y: auto;
-    background: var(--bg); padding: 0; border-right: 1px solid var(--line); box-shadow: none;
+    background: var(--bg); padding: 0; border-top: 1px solid var(--line); border-right: 1px solid var(--line); box-shadow: none;
     transform: translateX(-100%); visibility: hidden;
     transition: transform .28s cubic-bezier(.2, .7, .2, 1), visibility 0s linear .28s;
   }

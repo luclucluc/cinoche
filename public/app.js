@@ -367,9 +367,6 @@ function onHoursInput(root, target) {
   const pct = (h) => ((h - H_MIN) / (H_MAX - H_MIN)) * 100;
   const box = root.querySelector('.dual-range');
   box.style.setProperty('--a', pct(a) + '%'); box.style.setProperty('--b', pct(b) + '%');
-  const val = root.querySelector('.pop-hours-val');
-  val.textContent = hoursLabel();
-  val.hidden = state.hours === '0';
   clearTimeout(hoursTimer);
   hoursTimer = setTimeout(render, 60);
 }
@@ -383,7 +380,6 @@ function hoursBlock() {
   const [a, b] = hoursRange();
   const pct = (h) => ((h - H_MIN) / (H_MAX - H_MIN)) * 100;
   return `<div class="pop-hours">
-    <output class="pop-hours-val"${state.hours === '0' ? ' hidden' : ''}>${esc(hoursLabel())}</output>
     <div class="dual-range" style="--a:${pct(a)}%;--b:${pct(b)}%">
       <input type="range" class="pop-hours-range" data-end="a" min="${H_MIN}" max="${H_MAX}" step="${H_STEP}" value="${a}" aria-label="Début" />
       <input type="range" class="pop-hours-range" data-end="b" min="${H_MIN}" max="${H_MAX}" step="${H_STEP}" value="${b}" aria-label="Fin" />
@@ -1124,7 +1120,7 @@ function movieRow(key, m, shows = []) {
   return `<li class="item${open}" data-key="${key}">
     <div class="row film-row" role="button" tabindex="0">
       <span class="poster${!ap && isNew(m) ? ' is-new' : ''}" style="background-image:url('${POSTER(m.poster)}')"${!ap && isNew(m) ? ' title="Nouveauté"' : ''}></span>
-      <span class="title with-fav">${ap ? '<span class="ap" title="Avant-première">Avant<br>première</span>' : ''}<span>${esc(m.title)}${orig}</span>${bookmark(m)}</span>
+      <span class="title with-fav">${ap ? '<span class="ap" title="Avant-première"><span class="ap-long">Avant<br>première</span><span class="ap-short">Avant P.</span></span>' : ''}<span>${esc(m.title)}${orig}</span>${bookmark(m)}</span>
       <span class="who"><span>${esc(m.directors.slice(0, 2).join(', ') || '—')}</span><span class="year">${esc(m.year || '')}</span></span>
       <span class="year-col">${esc(m.year || '')}</span>
       ${ratingCells(m)}
