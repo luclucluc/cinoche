@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Politique de confidentialité — Cinoche</title>
+    <meta name="description" content="Quelles données Cinoche conserve, où, et pourquoi elles ne sont jamais revendues ni transmises." />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <style>
+      :root { --ink: #1a1a1a; --muted: #6b6b6b; --line: #d6d4cf; --bg: #f4f3ef; color-scheme: light; }
+      body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.6 Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+      main { max-width: 680px; margin: 0 auto; padding: 32px 20px 64px; }
+      .back { display: inline-block; margin-bottom: 28px; color: var(--muted); text-decoration: none; font-size: 13px; }
+      .back:hover { color: var(--ink); }
+      h1 { font-size: 26px; line-height: 1.2; margin: 0 0 6px; }
+      .date { color: var(--muted); font-size: 13px; margin: 0 0 28px; }
+      h2 { font-size: 17px; margin: 32px 0 8px; padding-top: 16px; border-top: 1px solid var(--line); }
+      p, ul { margin: 0 0 12px; }
+      ul { padding-left: 20px; }
+      li + li { margin-top: 4px; }
+      .lead { font-size: 16px; }
+      a { color: inherit; text-underline-offset: 3px; }
+      code { font-size: 13px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <a class="back" href="./">← Retour à Cinoche</a>
+      <h1>Politique de confidentialité</h1>
+      <p class="date">Dernière mise à jour : 23 novembre 2026</p>
+
+      <p class="lead">Cinoche est un projet personnel et non commercial. Il ne cherche à générer aucun revenu : pas de publicité, pas d’abonnement, pas de partenariat. Vos données ne sont jamais vendues, louées, réutilisées à d’autres fins ni transmises à qui que ce soit.</p>
+
+      <h2>Sans compte : tout reste sur votre appareil</h2>
+      <p>Par défaut, vos préférences sont enregistrées uniquement dans votre navigateur (stockage local). Elles ne quittent jamais votre appareil et nous n’y avons pas accès. Il s’agit de :</p>
+      <ul>
+        <li>vos films favoris, vos films vus et vos notes ;</li>
+        <li>vos cinémas favoris, vos filtres et vos réglages d’affichage (thème, notes affichées, boutons, ordre des séances) ;</li>
+        <li>les personnes et les chaînes de cinémas que vous avez choisi de masquer ;</li>
+        <li>la position ou l’adresse que vous avez choisie pour le filtre « Autour de… », si vous l’utilisez.</li>
+      </ul>
+      <p>Vous pouvez tout effacer à tout moment depuis Compte → Données → « Tout effacer », ou en supprimant les données du site dans votre navigateur.</p>
+
+      <h2>Avec un compte synchronisé</h2>
+      <p>Le compte synchronisé est facultatif. Il sert uniquement à retrouver vos préférences sur plusieurs appareils.</p>
+      <ul>
+        <li><b>Aucune information personnelle n’est demandée</b> : ni nom, ni e-mail, ni mot de passe, ni numéro de téléphone.</li>
+        <li>Le compte repose sur une <b>clé secrète</b> générée au hasard sur votre appareil. Sur le serveur, cette clé n’est jamais conservée telle quelle : seule son empreinte chiffrée (SHA-256) sert d’identifiant. Sans la clé, il est impossible de relier des préférences à une personne.</li>
+        <li>Les données envoyées sont exactement les préférences listées ci-dessus (y compris la position enregistrée, si vous en avez choisi une). Rien d’autre.</li>
+        <li>Elles sont stockées chez <b>Cloudflare</b> (service Workers KV), qui héberge le serveur de synchronisation. Elles ne servent qu’à être renvoyées à vos appareils.</li>
+        <li>Elles sont conservées tant que le compte existe. « Supprimer le compte » (Compte → Données) les efface définitivement du serveur, pour tous vos appareils. Les préférences restent dans votre navigateur tant que vous ne les effacez pas.</li>
+      </ul>
+
+      <h2>Ce que Cinoche ne fait pas</h2>
+      <ul>
+        <li>Aucun cookie, aucune mesure d’audience, aucun outil de suivi ni de publicité.</li>
+        <li>Aucune revente, aucun partage, aucun transfert de vos données à des tiers.</li>
+        <li>Aucune utilisation de vos données pour autre chose que le fonctionnement du site.</li>
+        <li>Aucun profilage, aucun envoi d’e-mail ou de notification.</li>
+      </ul>
+
+      <h2>Services utilisés pour afficher le site</h2>
+      <p>Comme tout site web, Cinoche s’appuie sur quelques services extérieurs. En chargeant leurs contenus, votre navigateur leur communique techniquement son adresse IP, comme lors de toute visite d’un site. Cinoche ne leur transmet aucune donnée vous concernant.</p>
+      <ul>
+        <li><b>GitHub Pages</b> : hébergement du site.</li>
+        <li><b>Allociné</b> : affiches des films. La recherche de films qui ne sont pas à l’affiche passe par notre serveur, de sorte qu’Allociné ne reçoit que le texte recherché, jamais votre adresse IP.</li>
+        <li><b>OpenFreeMap / OpenStreetMap</b> : fonds de carte, uniquement en vue Carte.</li>
+        <li><b>Géoplateforme de l’IGN</b> (<code>data.geopf.fr</code>) : recherche d’adresse, uniquement quand vous tapez une adresse dans le filtre Lieu.</li>
+        <li><b>unpkg et jsDelivr</b> : bibliothèques de la carte et du QR code du compte.</li>
+      </ul>
+      <p>Les liens vers Google Maps, Allociné, IMDb, SensCritique, Letterboxd et les sites de réservation ne s’ouvrent que si vous cliquez dessus : ces sites appliquent alors leur propre politique de confidentialité.</p>
+      <p>Si vous utilisez « Autour de moi », votre position est demandée par votre navigateur. Elle est utilisée sur votre appareil pour calculer les distances et n’est envoyée nulle part, sauf au serveur de synchronisation si vous avez un compte.</p>
+
+      <h2>Vos droits</h2>
+      <p>Vous pouvez à tout moment consulter vos préférences (Compte → Données → « Télécharger le fichier »), les effacer sur votre appareil et supprimer votre compte synchronisé. Comme aucune donnée ne permet de vous identifier, ces outils vous donnent directement la main, sans démarche à faire.</p>
+      <p>Pour toute question, vous pouvez ouvrir un message sur la page du projet : <a href="https://github.com/luclucluc/paris-cine/issues" target="_blank" rel="noopener">github.com/luclucluc/paris-cine</a>.</p>
+    </main>
+  </body>
+</html>

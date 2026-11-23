@@ -119,6 +119,7 @@
         <button role="tab" data-ptab="affichage" class="on" aria-selected="true">Affichage</button>
         <button role="tab" data-ptab="masquages" aria-selected="false">Masquages<span id="hideCount"></span></button>
         <button role="tab" data-ptab="donnees" aria-selected="false">Données</button>
+        <button role="tab" data-ptab="app" aria-selected="false">App</button>
       </nav>
 
       <section data-ppanel="affichage">
@@ -164,12 +165,6 @@
         <div class="checks" id="chainList"></div>
       </section>
 
-      <section data-ppanel="donnees" hidden id="installBox">
-        <h3>Raccourci sur l’écran d’accueil</h3>
-        <p class="hint" id="installHint">Ouvrez Cinoche comme une application, depuis une icône sur votre téléphone.</p>
-        <div class="btns"><button class="btn" id="installBtn">Ajouter à l’écran d’accueil</button></div>
-      </section>
-
       <section data-ppanel="donnees" hidden>
         <h3>Stockage des préférences</h3>
         <div class="seg" id="syncModeSeg">
@@ -197,10 +192,23 @@
         <div class="btns"><button class="btn" id="forget">Tout effacer</button></div>
       </section>
 
+      <!-- Onglet App : téléphones et tablettes seulement (masqué avec une souris, voir style.css) -->
+      <section data-ppanel="app" hidden id="installBox">
+        <div class="install-row">
+          <img class="install-icon" src="apple-touch-icon.png" alt="" width="52" height="52" />
+          <div><b>Cinoche</b><p class="hint">Les séances de tous les cinémas de Paris</p></div>
+        </div>
+        <p class="install-intro">Il n’existe pas d’application Cinoche à télécharger sur l’App Store ou Google Play. Mais vous pouvez ajouter Cinoche à l’écran d’accueil de votre téléphone ou de votre tablette : il s’ouvre alors en plein écran, avec sa propre icône, comme une application.</p>
+        <div id="installSteps"></div>
+        <div class="btns"><button class="btn" id="installBtn" hidden>Ajouter à l’écran d’accueil</button></div>
+        <p class="hint" id="installHint"></p>
+      </section>
+
       <!-- Informations (ancien pied de page) -->
       <footer class="prefs-foot" data-ppanel="donnees" hidden>
         <span id="updated"></span><br />
-        Données : Allociné · Adresses : BAN · Carte : OpenFreeMap / OpenStreetMap
+        Données : Allociné · Adresses : BAN · Carte : OpenFreeMap / OpenStreetMap<br />
+        <a href="confidentialite.html">Politique de confidentialité</a>
       </footer>
     </aside>
 

@@ -643,7 +643,7 @@ function bindControls() {
       const list = pop.querySelector('.pop-addr-list');
       if (q.length < 3) { list.hidden = true; return; }
       addrTimer = setTimeout(async () => {
-        try { nearResults = await searchAddress(q, state.geo || undefined); } catch { nearResults = []; }
+        try { nearResults = await searchAddress(q) /* centré sur Paris : la position enregistrée n’est jamais envoyée */; } catch { nearResults = []; }
         list.innerHTML = nearResults.map((r, i) => `<li data-action="addr" data-i="${i}">${esc(r.label)}</li>`).join('');
         list.hidden = !nearResults.length;
       }, 250);
@@ -1675,26 +1675,49 @@ function replaceLocalPrefs(prefs) {
   location.reload();
 }
 
-// ------------------------------------------------------------------ Raccourci sur l'écran d'accueil
-// Android / Chrome : vraie invite d'installation. iPhone / iPad : pas d'invite possible, on explique le geste.
+// ------------------------------------------------------------------ Onglet App : raccourci sur l'écran d'accueil
+// Android / Chrome : vraie invite d'installation (bouton). iPhone / iPad : pas d'invite possible, on explique le geste.
 let installPrompt = null;
-addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installPrompt = e; });
+addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  installPrompt = e;
+  const btn = document.getElementById('installBtn');
+  if (btn) btn.hidden = false;
+});
+const INSTALL_STEPS = {
+  ios: ['Sur iPhone et iPad', [
+    'Ouvrez Cinoche dans Safari.',
+    'Touchez le bouton Partager (le carré avec une flèche vers le haut), en bas de l’écran sur iPhone, en haut sur iPad.',
+    'Faites défiler et choisissez « Sur l’écran d’accueil ».',
+    'Touchez « Ajouter » : l’icône Cinoche apparaît parmi vos apps.',
+  ]],
+  android: ['Sur Android', [
+    'Ouvrez Cinoche dans Chrome.',
+    'Touchez le menu ⋮ en haut à droite.',
+    'Choisissez « Ajouter à l’écran d’accueil » ou « Installer l’application ».',
+    'Confirmez : l’icône Cinoche apparaît parmi vos apps.',
+  ]],
+};
 function setupInstall() {
   const hint = $('#installHint'), btn = $('#installBtn');
   const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
   const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  if (standalone) { hint.textContent = 'Cinoche est déjà ouvert depuis l’écran d’accueil.'; btn.hidden = true; return; }
+  const android = /Android/.test(navigator.userAgent);
+  if (standalone) { hint.textContent = 'Cinoche est déjà sur votre écran d’accueil.'; btn.hidden = true; return; }
+  // Explication selon le système ; les deux si on ne le reconnaît pas
+  const os = ios ? ['ios'] : android ? ['android'] : ['ios', 'android'];
+  $('#installSteps').innerHTML = os.map((k) => {
+    const [title, steps] = INSTALL_STEPS[k];
+    return `<h3>${title}</h3><ol class="install-steps">${steps.map((t) => `<li>${t}</li>`).join('')}</ol>`;
+  }).join('');
+  btn.hidden = !installPrompt;
   btn.onclick = async () => {
-    if (installPrompt) {
-      installPrompt.prompt();
-      const { outcome } = await installPrompt.userChoice;
-      installPrompt = null;
-      if (outcome === 'accepted') { hint.textContent = 'Raccourci ajouté.'; btn.hidden = true; }
-      return;
-    }
-    hint.textContent = ios
-      ? 'Dans Safari, touchez le bouton Partager (carré avec une flèche vers le haut), puis « Sur l’écran d’accueil ».'
-      : 'Ouvrez le menu du navigateur (⋮), puis « Ajouter à l’écran d’accueil » ou « Installer l’application ».';
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    installPrompt = null;
+    btn.hidden = true;
+    if (outcome === 'accepted') hint.textContent = 'Cinoche a été ajouté à votre écran d’accueil.';
   };
 }
 
@@ -1718,7 +1741,7 @@ function renderSync(st = sync.syncState()) {
       <div class="sync-qr" id="syncQr" hidden></div>
       <div class="btns"><button class="btn" data-sync="now"${st.busy ? ' disabled' : ''}>${st.busy ? 'Synchronisation…' : 'Synchroniser maintenant'}</button><button class="btn" data-sync="leave">Quitter sur ce navigateur</button><button class="btn" data-sync="delete">Supprimer le compte</button></div>`;
   } else {
-    html = `<p class="hint">Sans e-mail ni mot de passe : une <b>clé secrète</b> donne accès à vos préférences sur tous vos navigateurs et appareils.</p>
+    html = `<p class="hint">Sans e-mail ni mot de passe : une <b>clé secrète</b> donne accès à vos préférences sur tous vos navigateurs et appareils. <a href="confidentialite.html">Données et confidentialité</a></p>
       <div class="btns"><button class="btn" data-sync="create"${st.busy ? ' disabled' : ''}>${st.busy ? 'Création…' : 'Créer un compte'}</button></div>
       <form class="sync-form" id="syncJoin"><input id="syncKeyInput" placeholder="J’ai déjà une clé : XXXX-XXXX-…" autocomplete="off" spellcheck="false" />
       <button class="btn" type="submit">Utiliser</button></form>`;
