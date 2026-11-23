@@ -3,13 +3,17 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Paris Ciné — toutes les séances de Paris</title>
+    <title>Cinoche — toutes les séances de Paris</title>
     <meta name="description" content="Le programme de tous les cinémas de Paris et de la proche banlieue, en un coup d'œil." />
     <meta name="color-scheme" content="light dark" />
-    <!-- Favicon sans fond : noir sur onglet clair, blanc sur onglet sombre -->
-    <link rel="icon" type="image/svg+xml" href="favicon.svg" media="(prefers-color-scheme: light)" />
-    <link rel="icon" type="image/svg+xml" href="favicon-white.svg" media="(prefers-color-scheme: dark)" />
+    <!-- Favicon sans fond : un seul SVG qui passe du noir au blanc selon le thème du navigateur -->
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <!-- Raccourci sur l'écran d'accueil (application) -->
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="Cinoche" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
@@ -122,7 +126,7 @@
         <div class="seg" id="themeSeg">
           <button data-theme="light">Clair</button>
           <button data-theme="dark">Sombre</button>
-          <button data-theme="">Système</button>
+          <button data-theme="system">Système</button>
         </div>
       </section>
 
@@ -158,6 +162,12 @@
       <section data-ppanel="masquages" hidden>
         <h3>Masquer des enseignes</h3>
         <div class="checks" id="chainList"></div>
+      </section>
+
+      <section data-ppanel="donnees" hidden id="installBox">
+        <h3>Raccourci sur l’écran d’accueil</h3>
+        <p class="hint" id="installHint">Ouvrez Cinoche comme une application, depuis une icône sur votre téléphone.</p>
+        <div class="btns"><button class="btn" id="installBtn">Ajouter à l’écran d’accueil</button></div>
       </section>
 
       <section data-ppanel="donnees" hidden>

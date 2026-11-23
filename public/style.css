@@ -644,6 +644,9 @@ body.no-scroll { overflow: hidden; }
   .pop:not(.inline) { left: 12px !important; right: 12px; width: auto; }
   .tabs { order: 3; width: 100%; height: 38px; border-top: 1px solid var(--hair); margin: 0 calc(-1 * var(--pad)); padding: 0 var(--pad); width: calc(100% + 2 * var(--pad)); }
   .days button { flex: 0 0 auto; min-width: max-content; }
+  /* Pas de contour de sélection ni de surbrillance au toucher */
+  * { -webkit-tap-highlight-color: transparent; }
+  *:focus, *:focus-visible { outline: none !important; }
   .prefs { width: 100%; min-width: 0; box-sizing: border-box; border-top: 1px solid var(--line); } /* Compte, Films vus : pleine largeur */
   .prefs-head { height: var(--subhead-h); padding-left: var(--pad); } /* hauteur de la barre de recherche */
   .prefs-head .icon-btn { width: 46px; }

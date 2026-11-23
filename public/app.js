@@ -1,4 +1,4 @@
-// Paris Ciné — interface. Données : data/programme.json (généré par scraper/scrape.js)
+// Cinoche — interface. Données : data/programme.json (généré par scraper/scrape.js)
 // Format d'une séance : [movieId, theaterId, "YYYY-MM-DDTHH:MM", "VO"|"VF", formats]
 
 import { CineMap, distance, fmtDistance, searchAddress } from './map.js';
@@ -763,8 +763,9 @@ function bindControls() {
   window.addEventListener('hashchange', () => { readHash(); render(); });
 }
 
+// Thème : 'light' (par défaut), 'dark' ou 'system' (suit le réglage de l'appareil)
 function applyTheme(pref) {
-  const dark = pref ? pref === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  const dark = pref === 'system' ? matchMedia('(prefers-color-scheme: dark)').matches : pref === 'dark';
   document.documentElement.dataset.theme = dark ? 'dark' : 'light';
 }
 
@@ -1527,7 +1528,7 @@ function printProgramme() {
       return `<div class="psheet"><div class="pmargin">page ${i + 1}/${all.length} — ${esc(when)}</div><table class="ppage"><tbody>${p.join('')}</tbody></table></div>`;
     }).join('');
   const title = document.title;
-  document.title = `Paris Ciné — programme ${week ? 'semaine' : state.date}`;
+  document.title = `Cinoche — programme ${week ? 'semaine' : state.date}`;
   window.addEventListener('afterprint', () => { document.title = title; }, { once: true });
   window.print();
 }
@@ -1624,7 +1625,7 @@ function people() {
 }
 
 function renderPrefs() {
-  const pref = store.get('theme', null) || '';
+  const pref = store.get('theme', null) || 'light';
   for (const b of $('#themeSeg').children) b.classList.toggle('on', b.dataset.theme === pref);
   for (const b of $('#orderSeg').children) b.classList.toggle('on', b.dataset.order === state.showOrder);
 
@@ -1663,7 +1664,7 @@ const toCode = (obj) => CODE_PREFIX + btoa(String.fromCharCode(...new TextEncode
 const fromCode = (code) => JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(code.trim().slice(CODE_PREFIX.length)), (c) => c.charCodeAt(0))));
 
 function importPrefs(data) {
-  if (data?.app !== PREFS_APP || typeof data.prefs !== 'object') throw new Error('Ce fichier ne contient pas de préférences Paris Ciné.');
+  if (data?.app !== PREFS_APP || typeof data.prefs !== 'object') throw new Error('Ce fichier ne contient pas de préférences Cinoche.');
   localStorage.setItem('pcsync.dirty', '1'); // à envoyer au compte s'il y en a un
   replaceLocalPrefs(data.prefs);
 }
@@ -1672,6 +1673,29 @@ function replaceLocalPrefs(prefs) {
   Object.keys(localStorage).filter((k) => k.startsWith('pc.')).forEach((k) => localStorage.removeItem(k));
   for (const [k, v] of Object.entries(prefs)) localStorage.setItem('pc.' + k, JSON.stringify(v));
   location.reload();
+}
+
+// ------------------------------------------------------------------ Raccourci sur l'écran d'accueil
+// Android / Chrome : vraie invite d'installation. iPhone / iPad : pas d'invite possible, on explique le geste.
+let installPrompt = null;
+addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installPrompt = e; });
+function setupInstall() {
+  const hint = $('#installHint'), btn = $('#installBtn');
+  const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (standalone) { hint.textContent = 'Cinoche est déjà ouvert depuis l’écran d’accueil.'; btn.hidden = true; return; }
+  btn.onclick = async () => {
+    if (installPrompt) {
+      installPrompt.prompt();
+      const { outcome } = await installPrompt.userChoice;
+      installPrompt = null;
+      if (outcome === 'accepted') { hint.textContent = 'Raccourci ajouté.'; btn.hidden = true; }
+      return;
+    }
+    hint.textContent = ios
+      ? 'Dans Safari, touchez le bouton Partager (carré avec une flèche vers le haut), puis « Sur l’écran d’accueil ».'
+      : 'Ouvrez le menu du navigateur (⋮), puis « Ajouter à l’écran d’accueil » ou « Installer l’application ».';
+  };
 }
 
 // ------------------------------------------------------------------ Stockage : navigateur ou compte
@@ -1758,6 +1782,7 @@ function bindPrefs() {
     if (b) setPrefsTab(b.dataset.ptab);
   };
   $('#prefsBtn').onclick = openPrefs;
+  setupInstall();
   $('#topPrefsBtn').onclick = openPrefs; // mobile : en haut à droite
   $('#prefsClose').onclick = closePrefs;
   $('#prefsOverlay').onclick = closePrefs;
@@ -1767,8 +1792,8 @@ function bindPrefs() {
   $('#themeSeg').onclick = (e) => {
     const b = e.target.closest('[data-theme]');
     if (!b) return;
-    store.set('theme', b.dataset.theme || null);
-    applyTheme(b.dataset.theme || null);
+    store.set('theme', b.dataset.theme);
+    applyTheme(b.dataset.theme);
     renderPrefs();
     if (state.view === 'map') render();
   };
@@ -1902,7 +1927,7 @@ function bindPrefs() {
   };
   $('#importCodeBtn').onclick = () => {
     const code = $('#importCode').value.trim();
-    if (!code.startsWith(CODE_PREFIX)) return status('Ce code n’est pas un code de préférences Paris Ciné.');
+    if (!code.startsWith(CODE_PREFIX)) return status('Ce code n’est pas un code de préférences Cinoche.');
     try { importPrefs(fromCode(code)); } catch { status('Code invalide ou incomplet.'); }
   };
 
