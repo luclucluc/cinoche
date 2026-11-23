@@ -682,6 +682,14 @@ body.no-scroll { overflow: hidden; }
   .top-fav.on svg { fill: currentColor; }
   .side-actions { display: none !important; } /* Favoris, Films vus et Compte : dans la barre du haut sur mobile */
   .search { order: 2; flex: 1 1 0; min-width: 0; width: auto; height: var(--subhead-h); padding-left: 12px; border-right: 0; border-top: 0; }
+  /* Barre du haut : six boutons de même largeur, picto centré ; la recherche n'est qu'une loupe
+     tant qu'on n'y touche pas, puis prend toute la ligne (le champ reste focalisable : pas de display:none) */
+  .burger { flex: 1 1 0; width: auto; }
+  .search { position: relative; justify-content: center; padding: 0; color: var(--ink); }
+  .search:not(:focus-within) { gap: 0; cursor: pointer; }
+  .search:not(:focus-within) input, .search:not(:focus-within) .x-circle { position: absolute; width: 1px; opacity: 0; pointer-events: none; }
+  .search:not(:focus-within):has(input:not(:placeholder-shown)) { background: var(--active); } /* recherche en cours, champ refermé */
+  .top:has(.search:focus-within) .search { justify-content: flex-start; padding-left: 12px; color: var(--muted); }
   .results-bar { display: none; } /* le bouton Filtres est remplacé par le burger */
   .layout { display: block; }
   main { --pad: 10px; padding-left: var(--pad); } /* marges latérales de la liste plus étroites */
@@ -842,3 +850,13 @@ sup { font-size: .7em; line-height: 0; vertical-align: super; }
 .friend-empty { margin: 0 0 8px; }
 .friend .btns { margin: 4px 0 12px; }
 .btn.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.filters-icon svg { stroke-width: 1.3; stroke-linecap: butt; } /* picto des filtres : trait affiné, sinon il paraît plus gras que les autres */
+
+/* Compte : état de la synchronisation, avec le picto pour la relancer */
+.sync-status { display: flex; align-items: center; gap: 10px; margin: 4px 0 10px; }
+.sync-status span { display: flex; flex-direction: column; font-size: var(--fs-text); }
+.sync-status small { font-size: var(--fs-small); color: var(--muted); }
+.sync-refresh { flex: none; display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.sync-refresh svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: square; }
+.sync-refresh.busy svg { animation: sync-spin .9s linear infinite; }
+@keyframes sync-spin { to { transform: rotate(360deg); } }

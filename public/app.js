@@ -732,7 +732,13 @@ function bindControls() {
       store.set('favMovies', [...state.favMovies]);
       store.set('seen', state.seen);
       updateSeenBtn();
-      render();
+      // Hors « mes favoris », pas besoin de tout redessiner : on met à jour les signets sur place
+      // (la liste et la position de défilement ne bougent pas)
+      if (state.onlyFavs) render();
+      else {
+        for (const b of document.querySelectorAll(`.mfav[data-id="${id}"]`)) b.outerHTML = bookmark(P.movies[id] || offMovies.get(id) || { id });
+        updateFavBtn();
+      }
       return;
     }
     const fav = e.target.closest('.fav');
@@ -938,7 +944,14 @@ function render() {
   $('#results').classList.toggle('map-mode', isMap);
   document.documentElement.style.setProperty('--ncells', visibleRatings().length);
   setStatus(''); // rien au-dessus de la carte
-  $('#days .on')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  // Jour choisi visible dans la bande des jours : défilement horizontal de la bande seulement
+  // (scrollIntoView faisait aussi remonter la page sur iPhone, la bande étant dans l'en-tête fixe)
+  const dayOn = $('#days .on'), days = $('#days');
+  if (dayOn) {
+    const l = dayOn.offsetLeft - days.offsetLeft, r = l + dayOn.offsetWidth;
+    if (l < days.scrollLeft) days.scrollLeft = l;
+    else if (r > days.scrollLeft + days.clientWidth) days.scrollLeft = r - days.clientWidth;
+  }
   writeHash();
 
   const shows = filteredShows();
@@ -1962,12 +1975,15 @@ function renderSync(st = sync.syncState()) {
   } else if (!st.configured) {
     html = '<p class="hint">La synchronisation n’est pas encore activée sur ce site : vos préférences restent dans ce navigateur pour l’instant.</p>';
   } else if (st.key) {
-    html = `<p class="hint">Compte actif${when ? ` · synchronisé le ${esc(when)}` : ''}. Vos préférences (y compris votre position enregistrée) suivent sur tous les appareils où vous utilisez cette clé.</p>
+    // Pastille de synchronisation : le picto relance l'échange (récupère la version en ligne, puis envoie celle d'ici)
+    html = `<div class="sync-status"><button class="sync-refresh${st.busy ? ' busy' : ''}" data-sync="now"${st.busy ? ' disabled' : ''} aria-label="Synchroniser maintenant" title="Synchroniser maintenant"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3" /><path d="M19.5 4v4.5H15" /></svg></button>
+        <span>${st.busy ? 'Synchronisation…' : st.error ? 'Synchronisation à refaire' : 'Synchronisé avec les données les plus récentes'}${when && !st.busy ? `<small>${esc(when)}</small>` : ''}</span></div>
+      <p class="hint">Vos préférences (y compris votre position enregistrée) suivent sur tous les appareils où vous utilisez cette clé.</p>
       <div class="sync-key"><code>${esc(sync.formatKey(st.key))}</code></div>
       <p class="hint"><b>Gardez cette clé</b> : c’est le seul moyen de retrouver vos préférences. Pour ajouter un appareil, ouvrez-y le lien ou scannez le QR code.</p>
       <div class="btns"><button class="btn" data-sync="copy-key">Copier la clé</button><button class="btn" data-sync="copy-link">Copier le lien</button><button class="btn" data-sync="qr">QR code</button></div>
       <div class="sync-qr" id="syncQr" hidden></div>
-      <div class="btns"><button class="btn" data-sync="now"${st.busy ? ' disabled' : ''}>${st.busy ? 'Synchronisation…' : 'Synchroniser maintenant'}</button><button class="btn" data-sync="leave">Quitter sur ce navigateur</button><button class="btn" data-sync="delete">Supprimer le compte</button></div>`;
+      <div class="btns"><button class="btn" data-sync="leave">Quitter sur ce navigateur</button><button class="btn" data-sync="delete">Supprimer le compte</button></div>`;
   } else {
     html = `<p class="hint">Sans e-mail ni mot de passe : une <b>clé secrète</b> donne accès à vos préférences sur tous vos navigateurs et appareils. <a href="confidentialite.html">Données et confidentialité</a></p>
       <div class="btns"><button class="btn" data-sync="create"${st.busy ? ' disabled' : ''}>${st.busy ? 'Création…' : 'Créer un compte'}</button></div>
